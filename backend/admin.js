@@ -7,7 +7,8 @@ import { GiangVien } from './models/GiangVien';
 import { SinhVien } from './models/SinhVien';   // Import thêm các model khác nếu cần
 const mssql = require('mssql');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
+
 
 // Kết nối tới MSSQL bằng TypeORM
 createConnection({
