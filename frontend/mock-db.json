@@ -1,0 +1,138 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "email": "gv1@ckc.edu.vn",
+      "matKhau": "123456",
+      "quyen": 0,
+      "trangThai": 1
+    },
+    {
+      "id": "2",
+      "email": "sv1@ckc.edu.vn",
+      "matKhau": "654321",
+      "quyen": 1,
+      "trangThai": 1
+    }
+  ],
+  "sinhvien": [
+    {
+      "id": "1",
+      "maSV": 20231234,
+      "hoSV": "Nguyen",
+      "tenSV": "Van A",
+      "ngaySinh": "2002-05-01",
+      "gioiTinh": 1,
+      "sdt": "0123456789",
+      "cccd": "123456789012",
+      "maTK": 2,
+      "diaChi": "123 Le Loi",
+      "trangThai": 1
+    }
+  ],
+  "giangvien": [
+    {
+      "id": "1",
+      "msgv": "GV001",
+      "hoGV": "Tran",
+      "tenGV": "Thi B",
+      "ngaySinh": "1980-03-10",
+      "gioiTinh": 0,
+      "sdt": "0987654321",
+      "maTK": 1,
+      "cccd": "987654321012",
+      "maBM": 1,
+      "diaChi": "456 Nguyen Trai",
+      "trangThai": 1
+    }
+  ],
+  "lophophan": [
+    {
+      "id": "1",
+      "tenLHP": "Lap trinh React Native",
+      "ngayTao": "2024-09-01",
+      "hocKy": 1,
+      "chinhSach": 1,
+      "namHoc": 2024,
+      "maGV": 1,
+      "maMH": 1,
+      "luuTru": 0,
+      "trangThai": 1
+    }
+  ],
+  "monhoc": [
+    {
+      "id": "1",
+      "tenMH": "Lap trinh di dong",
+      "tinChi": 3,
+      "maBM": 1,
+      "trangThai": 1
+    }
+  ],
+  "baiviet": [
+    {
+      "id": "1",
+      "tieuDe": "Bai tap 1",
+      "noiDung": "Viet app hello world",
+      "ngayTao": "2024-09-05",
+      "loaiBV": 1,
+      "maTK": 1,
+      "maLHP": 1,
+      "maCD": 1,
+      "ngayKetThuc": "2024-09-12",
+      "gioKetThuc": "23:59:59",
+      "trangThai": 1
+    },
+    {
+      "id": "2",
+      "tieuDe": "Bài tập chương 1",
+      "noiDung": "Làm từ trang 1 đến 5",
+      "loaiBV": 1,
+      "maLHP": 1,
+      "ngayKetThuc": "2024-09-12",
+      "gioKetThuc": "23:59:59",
+      "trangThai": 1
+    },
+    {
+      "id": "43b6",
+      "maGV": "1",
+      "tieuDe": "Nộp bài",
+      "noiDung": "Hãy làm trong 10p",
+      "loaiBV": 1,
+      "ngayTao": "2025-06-11T16:31:39.795Z",
+      "hanNop": "2025-06-13T16:29:00.000Z"
+    }
+  ],
+  "sinhvien_lhp": [
+    {
+      "id": "1",
+      "maSV": 20231234,
+      "maLHP": 1,
+      "trangThai": 1
+    }
+  ],
+  "file": [
+    {
+      "id": "1",
+      "tenFile": "bai1.docx",
+      "tenVatLy": "123abc.docx",
+      "ngayTao": "2024-09-05",
+      "duongDan": "/files/123abc.docx",
+      "loaiFile": "docx",
+      "maTK": 2,
+      "dungLuong": 1.2,
+      "trangThai": 1
+    }
+  ],
+  "sinhvien_bailam": [
+    {
+      "id": "1",
+      "maSV": 20231234,
+      "maFile": 1,
+      "maBV": 1,
+      "lienKet": "/files/123abc.docx",
+      "vanBan": "Code em viet o trong file",
+      "trangThai": 1
+    }
+  ]
+}
