@@ -13,8 +13,8 @@ export const KhoaList = () => (
   <List>
     <Datagrid rowClick="edit">
       <TextField source="id" />
-      <TextField source="MaKhoa" />
-      <TextField source="TenKhoa" />
+      <TextField source="MaKhoa" label="Mã Khoa" />
+      <TextField source="TenKhoa" label="Tên Khoa" />
       <EditButton />
     </Datagrid>
   </List>
@@ -24,8 +24,8 @@ export const KhoaEdit = () => (
   <Edit>
     <SimpleForm>
       <TextInput source="id" disabled />
-      <TextInput source="maKhoa" />
-      <TextInput source="tenKhoa" />
+      <TextInput source="maKhoa" label="Mã Khoa" />
+      <TextInput source="tenKhoa" label="Tên Khoa" />
     </SimpleForm>
   </Edit>
 );
@@ -33,8 +33,8 @@ export const KhoaEdit = () => (
 export const KhoaCreate = () => (
   <Create>
     <SimpleForm>
-      <TextInput source="maKhoa" />
-      <TextInput source="tenKhoa" />
+      <TextInput source="maKhoa" label="Mã Khoa" />
+      <TextInput source="tenKhoa" label="Tên Khoa" />
     </SimpleForm>
   </Create>
 );

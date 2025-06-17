@@ -3,7 +3,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { getAllKhoa } = require("../controllers/adminController"); // Import getAllKhoa from adminController
+const { getAllKhoa, getAllMonHoc, getMonHocById } = require("../controllers/adminController"); // Import getAllKhoa from adminController
 const { getAllBoMon } = require("../controllers/adminController"); // Import getAllKhoa from adminController
 const { getBoMonById } = require("../controllers/adminController"); // Import getBoMonById from adminController
 const {
@@ -35,8 +35,11 @@ router.put("/bomon/:id", updateBoMon);
 router.delete("/bomon/:id", deleteBoMon);
 
 // Quản lý Môn học
+router.get("/monhoc", getAllMonHoc); // Assuming this is to get all MonHoc
+router.get("/monhoc/:id", getMonHocById); // Assuming this is to get MonHoc by ID
+
 router.post("/monhoc", addMonHoc);
-router.put("/monhoc", updateMonHoc);
+router.put("/monhoc/:id", updateMonHoc);
 router.delete("/monhoc/:id", deleteMonHoc);
 
 module.exports = router;

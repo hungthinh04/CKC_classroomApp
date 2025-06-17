@@ -50,6 +50,33 @@ exports.getBoMonById = async (req, res) => {
   }
 };
 
+exports.getMonHocById = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await pool
+      .request()
+      .input("ID", sql.Int, id)
+      .query("SELECT ID, MaMonHoc, TenMonHoc, TinChi, MaBoMon FROM MONHOC WHERE ID = @ID");
+
+    const monHoc = result.recordset[0];
+    if (!monHoc)
+      return res.status(404).json({ message: "Không tìm thấy môn học" });
+
+    // Quan trọng: phải trả về key `id`
+    res.json({
+      id: monHoc.ID,
+      maMonHoc: monHoc.MaMonHoc,
+      tenMonHoc: monHoc.TenMonHoc,
+      tinChi: monHoc.TinChi,
+      maBoMon: monHoc.MaBoMon,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi truy vấn môn học" });
+  }
+};
+
+
 exports.getAllKhoa = async (req, res) => {
   try {
     const result = await pool.request().query("SELECT * FROM KHOA");
@@ -70,12 +97,12 @@ exports.getAllKhoa = async (req, res) => {
   }
 };
 
-exports.getAllBoMon = async (req, res) => {
+exports.getAllMonHoc = async (req, res) => {
   try {
-    const result = await pool.request().query("SELECT * FROM BOMON");
+    const result = await pool.request().query("SELECT * FROM MONHOC");
     const total = result.recordset.length;
 
-    res.set("Content-Range", `bomon 0-${total - 1}/${total}`);
+    res.set("Content-Range", `monhoc 0-${total - 1}/${total}`);
     res.set("Access-Control-Expose-Headers", "Content-Range");
 
     const data = result.recordset.map((item) => ({
@@ -86,9 +113,49 @@ exports.getAllBoMon = async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi truy vấn khoa" });
+    res.status(500).json({ message: "Lỗi truy vấn môn học" });
   }
 };
+
+exports.getAllBoMon = async (req, res) => {
+  try {
+    const sortParam = req.query.sort ? JSON.parse(req.query.sort) : ["ID", "ASC"];
+    const [sortField, sortOrder] = sortParam;
+
+    const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
+    const [start, end] = range;
+
+    const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
+    const tenBM = filter.TenBM || "";
+
+    const result = await pool
+      .request()
+      .input("TenBM", sql.NVarChar, `%${tenBM}%`)
+      .query(`
+        SELECT * FROM BOMON
+        WHERE TenBM LIKE @TenBM
+        ORDER BY ${sortField} ${sortOrder.toUpperCase()}
+      `);
+
+    const sliced = result.recordset.slice(start, end + 1);
+    const total = result.recordset.length;
+
+    res.set("Content-Range", `bomon ${start}-${end}/${total}`);
+    res.set("Access-Control-Expose-Headers", "Content-Range");
+
+    const data = sliced.map((item, index) => ({
+      ...item,
+      id: item.ID,
+      stt: start + index + 1,
+    }));
+
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi truy vấn bộ môn" });
+  }
+};
+
 
 exports.addKhoa = async (req, res) => {
   const { maKhoa, tenKhoa } = req.body;
@@ -137,17 +204,22 @@ exports.updateKhoa = async (req, res) => {
 };
 
 // controllers/khoaController.js
-
 exports.deleteKhoa = async (req, res) => {
   const id = req.params.id;
 
   try {
-    const result = await pool
+    await pool
       .request()
       .input("ID", sql.Int, id)
       .query(`DELETE FROM KHOA WHERE ID = @ID`);
 
-    res.status(200).json({ id: parseInt(id), message: "Xóa khoa thành công" }); // 👈 React Admin cần có `id`
+    await pool.request().query(`
+      DECLARE @MaxID INT;
+      SELECT @MaxID = ISNULL(MAX(ID), 0) FROM KHOA;
+      DBCC CHECKIDENT ('KHOA', RESEED, @MaxID);
+    `);
+
+    res.status(200).json({ id: parseInt(id), message: "Xóa khoa thành công" });
   } catch (err) {
     console.error("Lỗi khi xóa khoa:", err);
     res.status(500).json({ message: "Lỗi khi xóa khoa" });
@@ -165,8 +237,7 @@ exports.addBoMon = async (req, res) => {
       .request()
       .input("MaBoMon", sql.VarChar, maBoMon)
       .input("TenBM", sql.NVarChar, tenBM)
-      .input("MaKhoa", sql.Int, maKhoa)
-      .query(`
+      .input("MaKhoa", sql.Int, maKhoa).query(`
         INSERT INTO BOMON (MaBoMon, TenBM, MaKhoa)
         VALUES (@MaBoMon, @TenBM, @MaKhoa)
       `);
@@ -179,12 +250,10 @@ exports.addBoMon = async (req, res) => {
     const inserted = result.recordset[0];
 
     res.status(201).json({
-      data: {
-        id: inserted.ID,
-        maBoMon: inserted.MaBoMon,
-        tenBM: inserted.TenBM,
-        maKhoa: inserted.MaKhoa,
-      },
+      id: inserted.ID,
+      maBoMon: inserted.MaBoMon,
+      tenBM: inserted.TenBM,
+      maKhoa: inserted.MaKhoa,
     });
   } catch (err) {
     console.log("Dữ liệu nhận được:", req.body);
@@ -193,9 +262,9 @@ exports.addBoMon = async (req, res) => {
   }
 };
 
-
 exports.updateBoMon = async (req, res) => {
   const id = parseInt(req.params.id); // 👈 thay vì lấy từ req.body
+  const { maBoMon, tenBM, maKhoa } = req.body;
 
   try {
     await pool
@@ -209,12 +278,10 @@ exports.updateBoMon = async (req, res) => {
          WHERE ID = @ID`
       );
     res.status(200).json({
-      data: {
-        id,
-        maBoMon,
-        tenBM,
-        maKhoa,
-      },
+      id,
+      maBoMon,
+      tenBM,
+      maKhoa,
     });
   } catch (err) {
     console.error(err);
@@ -230,6 +297,13 @@ exports.deleteBoMon = async (req, res) => {
       .request()
       .input("ID", sql.Int, id)
       .query(`DELETE FROM BOMON WHERE ID = @ID`);
+
+    await pool.request().query(`
+      DECLARE @MaxID INT;
+      SELECT @MaxID = ISNULL(MAX(ID), 0) FROM BOMON;
+      DBCC CHECKIDENT ('BOMON', RESEED, @MaxID);
+    `);
+
     res.status(200).json({ message: "Bộ môn đã được xóa" });
   } catch (err) {
     console.error(err);
