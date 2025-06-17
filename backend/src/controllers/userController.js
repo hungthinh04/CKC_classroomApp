@@ -17,6 +17,16 @@ exports.getMe = async (req, res) => {
   }
 };
 
+exports.getAllKhoa = async (req, res) => {
+  try {
+    const result = await pool.request().query('SELECT * FROM KHOA');
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: 'Không thể lấy danh sách khoa' });
+  }
+};
+
+
 
 exports.addSinhVien = async (req, res) => {
   const { maTK, maLopHoc, hoTen } = req.body;

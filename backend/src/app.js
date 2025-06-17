@@ -10,7 +10,11 @@ const baivietRoutes = require('./routes/baiviet');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  exposedHeaders: ['Content-Range'],
+}));
+
 app.use(express.json());
 
 app.use('/api', authRoutes);
