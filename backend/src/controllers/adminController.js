@@ -56,7 +56,9 @@ exports.getMonHocById = async (req, res) => {
     const result = await pool
       .request()
       .input("ID", sql.Int, id)
-      .query("SELECT ID, MaMonHoc, TenMonHoc, TinChi, MaBoMon FROM MONHOC WHERE ID = @ID");
+      .query(
+        "SELECT ID, MaMonHoc, TenMH, TinChi, MaBM FROM MONHOC WHERE ID = @ID"
+      );
 
     const monHoc = result.recordset[0];
     if (!monHoc)
@@ -66,16 +68,15 @@ exports.getMonHocById = async (req, res) => {
     res.json({
       id: monHoc.ID,
       maMonHoc: monHoc.MaMonHoc,
-      tenMonHoc: monHoc.TenMonHoc,
+      tenMH: monHoc.TenMH,
       tinChi: monHoc.TinChi,
-      maBoMon: monHoc.MaBoMon,
+      maBM: monHoc.MaBM,
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi truy vấn môn học" });
   }
 };
-
 
 exports.getAllKhoa = async (req, res) => {
   try {
@@ -119,7 +120,9 @@ exports.getAllMonHoc = async (req, res) => {
 
 exports.getAllBoMon = async (req, res) => {
   try {
-    const sortParam = req.query.sort ? JSON.parse(req.query.sort) : ["ID", "ASC"];
+    const sortParam = req.query.sort
+      ? JSON.parse(req.query.sort)
+      : ["ID", "ASC"];
     const [sortField, sortOrder] = sortParam;
 
     const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
@@ -130,8 +133,7 @@ exports.getAllBoMon = async (req, res) => {
 
     const result = await pool
       .request()
-      .input("TenBM", sql.NVarChar, `%${tenBM}%`)
-      .query(`
+      .input("TenBM", sql.NVarChar, `%${tenBM}%`).query(`
         SELECT * FROM BOMON
         WHERE TenBM LIKE @TenBM
         ORDER BY ${sortField} ${sortOrder.toUpperCase()}
@@ -155,7 +157,6 @@ exports.getAllBoMon = async (req, res) => {
     res.status(500).json({ message: "Lỗi truy vấn bộ môn" });
   }
 };
-
 
 exports.addKhoa = async (req, res) => {
   const { maKhoa, tenKhoa } = req.body;
@@ -311,45 +312,91 @@ exports.deleteBoMon = async (req, res) => {
   }
 };
 
-// adminController.js
-
 exports.addMonHoc = async (req, res) => {
-  const { maMonHoc, tenMonHoc, tinChi, maBoMon } = req.body;
+  const { maMonHoc, tenMH, tinChi, maBM } = req.body;
 
   try {
     await pool
       .request()
       .input("MaMonHoc", sql.VarChar, maMonHoc)
-      .input("TenMonHoc", sql.NVarChar, tenMonHoc)
+      .input("TenMH", sql.NVarChar, tenMH)
       .input("TinChi", sql.Int, tinChi)
-      .input("MaBoMon", sql.Int, maBoMon)
-      .query(
-        `INSERT INTO MONHOC (MaMonHoc, TenMH, TinChi, MaBM)
-         VALUES (@MaMonHoc, @TenMonHoc, @TinChi, @MaBoMon)`
-      );
-    res.status(201).json({ message: "Môn học đã được thêm" });
+      .input("MaBM", sql.Int, maBM).query(`
+        INSERT INTO MONHOC (MaMonHoc, TenMH, TinChi, MaBM)
+        VALUES (@MaMonHoc, @TenMH, @TinChi, @MaBM)
+    `);
+
+    // Lấy bản ghi vừa được thêm vào
+    const result = await pool.request().query(`
+      SELECT TOP 1 * FROM MONHOC ORDER BY ID DESC
+    `);
+
+    const inserted = result.recordset[0];
+
+    // Đảm bảo trả về dữ liệu theo cấu trúc mong đợi
+    res.status(201).json({
+      id: inserted.ID,
+      maMonHoc: inserted.MaMonHoc,
+      tenMH: inserted.TenMH,
+      tinChi: inserted.TinChi,
+      maBM: inserted.MaBM,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Không thể thêm môn học" });
   }
 };
 
+exports.updateBoMon = async (req, res) => {
+  const id = parseInt(req.params.id); // 👈 thay vì lấy từ req.body
+  const { maBoMon, tenBM, maKhoa } = req.body;
+
+  try {
+    await pool
+      .request()
+      .input("ID", sql.Int, id)
+      .input("MaBoMon", sql.VarChar, maBoMon)
+      .input("TenBM", sql.NVarChar, tenBM)
+      .input("MaKhoa", sql.Int, maKhoa)
+      .query(
+        `UPDATE BOMON SET MaBoMon = @MaBoMon, TenBM = @TenBM, MaKhoa = @MaKhoa
+         WHERE ID = @ID`
+      );
+    res.status(200).json({
+      id,
+      maBoMon,
+      tenBM,
+      maKhoa,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Không thể cập nhật bộ môn" });
+  }
+};
 exports.updateMonHoc = async (req, res) => {
-  const { id, maMonHoc, tenMonHoc, tinChi, maBoMon } = req.body;
+  const id = parseInt(req.params.id);
+  const { maMonHoc, tenMH, tinChi, maBM } = req.body;
 
   try {
     await pool
       .request()
       .input("ID", sql.Int, id)
       .input("MaMonHoc", sql.VarChar, maMonHoc)
-      .input("TenMonHoc", sql.NVarChar, tenMonHoc)
+      .input("TenMH", sql.NVarChar, tenMH)
       .input("TinChi", sql.Int, tinChi)
-      .input("MaBoMon", sql.Int, maBoMon)
-      .query(
-        `UPDATE MONHOC SET MaMonHoc = @MaMonHoc, TenMH = @TenMonHoc, TinChi = @TinChi, MaBM = @MaBoMon
-         WHERE ID = @ID`
-      );
-    res.status(200).json({ message: "Môn học đã được cập nhật" });
+      .input("MaBM", sql.Int, maBM).query(`
+        UPDATE MONHOC SET MaMonHoc = @MaMonHoc, TenMH = @TenMH, TinChi = @TinChi, MaBM = @MaBM
+        WHERE ID = @ID
+    `);
+
+    // Trả về dữ liệu đã được cập nhật
+    res.status(200).json({
+      id,
+      maMonHoc,
+      tenMH,
+      tinChi,
+      maBM,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Không thể cập nhật môn học" });

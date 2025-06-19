@@ -29,10 +29,10 @@ export const MonHocEdit = () => (
   <Edit>
     <SimpleForm>
       <TextInput source="id" disabled />
-      <TextInput source="maMonHoc" />
-      <TextInput source="tenMonHoc" />
-      <NumberInput source="tinChi" />
-      <NumberInput source="maBoMon" />
+      <TextInput source="maMonHoc" label="Mã môn học" />
+      <TextInput source="tenMH" label="Tên môn học" />
+      <NumberInput source="tinChi" label="Tín chỉ" />
+      <NumberInput source="maBM" label="Mã bộ môn" />
     </SimpleForm>
   </Edit>
 );
@@ -40,10 +40,10 @@ export const MonHocEdit = () => (
 export const MonHocCreate = () => (
   <Create>
     <SimpleForm>
-      <TextInput source="maMonHoc" />
-      <TextInput source="tenMonHoc" />
-      <NumberInput source="tinChi" />
-      <NumberInput source="maBoMon" />
+      <TextInput source="maMonHoc" label="Mã môn học" />
+      <TextInput source="tenMH" label="Tên môn học" />
+      <NumberInput source="tinChi" label="Tín chỉ" />
+      <NumberInput source="maBM" label="Mã bộ môn" />
     </SimpleForm>
   </Create>
 );
