@@ -1,3 +1,4 @@
+import BaiVietDetail from "@/app/(drawer)/(bv)/baiviet/[id]";
 import { useLopHocPhan } from "@/context/_context";
 import { useAuth } from "@/stores/useAuth";
 import { Ionicons } from "@expo/vector-icons";
@@ -5,6 +6,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,7 +18,8 @@ export default function LopHocPhanDetail() {
   const { id, tenLHP } = useLopHocPhan();
   const [lop, setLop] = useState<any>(null);
   const [baiViet, setBaiViet] = useState<any[]>([]);
-const { user } = useAuth();
+  const { user } = useAuth();
+
   useEffect(() => {
     if (!id) return;
 
@@ -46,54 +49,66 @@ const { user } = useAuth();
     <ScrollView style={styles.container}>
       {/* Header lớp */}
       <View style={styles.header}>
-        <Image
-          source={require("../../../../../../assets/images/icon.png")}
+        <ImageBackground
+          source={require("../../../../../../assets/images/icon.png")} // ← thay đúng path của bạn
+          resizeMode="cover"
           style={styles.coverImg}
-        />
-        <View style={styles.headerContent}>
-          <Text style={styles.className}>{lop.tenLHP}</Text>
-          <Text style={styles.classMeta}>{lop.tenGV}</Text>
-          <Text style={styles.classMeta}>
-            Học kỳ {lop.hocKy} - Năm học {lop.namHoc}
-          </Text>
+          imageStyle={{ borderTopLeftRadius: 10, borderTopRightRadius: 10 }} // bo góc phần ảnh
+        >
+          <View style={styles.overlay}>
+            <Text style={styles.className}>{lop.tenLHP}</Text>
+            <Text style={styles.classMeta}>{lop.tenGV}</Text>
+            <Text style={styles.classMeta}>
+              Học kỳ {lop.hocKy} - Năm học {lop.namHoc}
+            </Text>
+          </View>
+        </ImageBackground>
+      </View>
+
+      {/* Bảng tin lớp học */}
+      <Text style={styles.sectionTitle}>Bảng tin lớp học</Text>
+
+      {/* Thông báo gì đó cho lớp */}
+      <View style={styles.postCard}>
+        <View style={styles.inlineNotify}>
+          <View style={styles.avatar}>
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>
+              {lop.tenGV?.charAt(0) || "H"}
+            </Text>
+          </View>
+          <Text style={styles.notifyText}>Thông báo tin gì đó cho lớp</Text>
         </View>
       </View>
 
-      {/* Danh sách bài viết */}
-      <Text style={styles.sectionTitle}>Bảng tin lớp học</Text>
+      {/* Các bài viết */}
       {baiViet.map((bv) => (
         <TouchableOpacity
           key={bv.id}
-          style={styles.postCard}
-          onPress={() => router.push(`../../../../(bv)/baiviet/${bv.id}`)}
+          onPress={() => router.push(`/(drawer)/(bv)/baiviet/${bv.id}`)} // Điều hướng đến màn hình chi tiết bài viết
         >
-          <View style={styles.postHeader}>
-            <View style={styles.avatar}>
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                {lop.tenGV?.charAt(0)}
-              </Text>
+          <View style={styles.postCard}>
+            <View style={styles.postHeader}>
+              <View style={styles.avatar}>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                  {lop.tenGV?.charAt(0)}
+                </Text>
+              </View>
+
+              <View>
+                <Text style={styles.postAuthor}>{lop.tenGV}</Text>
+                <Text style={styles.postDate}>
+                  {new Date(bv.ngayTao).toLocaleDateString()}
+                </Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.postAuthor}>{lop.tenGV}</Text>
-              <Text style={styles.postDate}>
-                {new Date(bv.ngayTao).toLocaleDateString()}
-              </Text>
+            <Text style={styles.postTitle}>{bv.tieuDe}</Text>
+            <Text style={styles.postContent}>{bv.noiDung}</Text>
+            <View style={styles.commentBox}>
+              <Text style={styles.commentText}>Thêm nhận xét trong lớp học</Text>
             </View>
           </View>
-          <Text style={styles.postTitle}>{bv.tieuDe}</Text>
-          <Text style={styles.postContent}>{bv.noiDung}</Text>
         </TouchableOpacity>
       ))}
-
-      {user?.quyen === 0 && (
-  <TouchableOpacity
-    style={styles.fab}
-    onPress={() => router.push("/taobaiviet")}
-  >
-    <Ionicons name="add" size={28} color="white" />
-  </TouchableOpacity>
-)}
-
     </ScrollView>
   );
 }
@@ -105,18 +120,16 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   header: {
-    backgroundColor: "#e0e7ff",
     borderRadius: 10,
-    overflow: "hidden",
     marginBottom: 16,
   },
   coverImg: {
-    height: 100,
+    height: 120,
     width: "100%",
-    resizeMode: "cover",
+    justifyContent: "flex-end",
   },
-  headerContent: {
-    padding: 12,
+  overlay: {
+    padding: 10,
   },
   className: {
     fontSize: 18,
@@ -126,58 +139,80 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "700",
     marginBottom: 10,
-  },
-  postCard: {
-    backgroundColor: "#f3f4f6",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    color: "#111827",
   },
   postHeader: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
   },
+  postCard: {
+    backgroundColor: "#ffffff", // trắng nền
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb", // viền xám nhạt
+    padding: 14,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2, // để có đổ bóng nhẹ (Android)
+  },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#4f46e5",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1d4ed8", // xanh dương đậm hơn
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
+    marginRight: 12,
   },
   postAuthor: {
     fontWeight: "bold",
+    fontSize: 14,
+    color: "#111827",
   },
   postDate: {
     fontSize: 12,
-    color: "#666",
+    color: "#6b7280",
+    marginTop: 2,
   },
   postTitle: {
-    fontWeight: "bold",
-    fontSize: 15,
+    fontWeight: "600",
+    fontSize: 16,
     marginTop: 4,
+    marginBottom: 4,
   },
   postContent: {
-    marginTop: 6,
-    fontSize: 13,
-    color: "#333",
+    fontSize: 14,
+    color: "#444",
+    lineHeight: 20,
   },
-  fab: {
-  position: "absolute",
-  bottom: 30,
-  right: 20,
-  backgroundColor: "#4f46e5",
-  width: 50,
-  height: 50,
-  borderRadius: 25,
-  alignItems: "center",
-  justifyContent: "center",
-  elevation: 5,
-},
-
+  commentBox: {
+    backgroundColor: "#f1f5f9", // nền xám nhạt
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0", // viền xám nhạt
+  },
+  commentText: {
+    color: "#2563eb",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  inlineNotify: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  notifyText: {
+    fontSize: 14,
+    color: "#444",
+    flexShrink: 1,
+  },
 });
