@@ -1,15 +1,18 @@
-import BaiVietDetail from "@/app/(drawer)/(bv)/baiviet/[id]";
+import BaiVietDetail from "@/app/(drawer)/(class)/lopHocPhan/[id]/(tabs)/baiviet/[id]";
 import { useLopHocPhan } from "@/context/_context";
 import { useAuth } from "@/stores/useAuth";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/constants/api";
+import { Link } from "expo-router";
 import {
   Image,
   ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -25,9 +28,9 @@ export default function LopHocPhanDetail() {
 
     const fetchData = async () => {
       const [resLHP, resGV, resBV] = await Promise.all([
-        fetch(`http://192.168.1.102:3001/lophophan/${id}`),
-        fetch(`http://192.168.1.102:3001/giangvien`),
-        fetch(`http://192.168.1.102:3001/baiviet?maLHP=${id}`),
+        fetch(`${API_BASE_URL}/lophophan/${id}`),
+        fetch(`${API_BASE_URL}/giangvien`),
+        fetch(`${API_BASE_URL}/baiviet?maLHP=${id}`),
       ]);
 
       const lhp = await resLHP.json();
@@ -76,39 +79,62 @@ export default function LopHocPhanDetail() {
               {lop.tenGV?.charAt(0) || "H"}
             </Text>
           </View>
-          <Text style={styles.notifyText}>Thông báo tin gì đó cho lớp</Text>
+          <TextInput
+            style={styles.notifyInput}
+            placeholder="Thông báo tin gì đó cho lớp"
+            placeholderTextColor="#444"
+            multiline
+            autoCorrect={true}
+            autoCapitalize="sentences"
+            keyboardType="default"
+            textBreakStrategy="simple"
+          />
         </View>
       </View>
 
       {/* Các bài viết */}
+      
       {baiViet.map((bv) => (
-        <TouchableOpacity
+        <Link
           key={bv.id}
-          onPress={() => router.push(`/(drawer)/(bv)/baiviet/${bv.id}`)} // Điều hướng đến màn hình chi tiết bài viết
+          href={`/(drawer)/(class)/lopHocPhan/${id}/(tabs)/baiviet/${bv.id}`}
+          asChild
         >
-          <View style={styles.postCard}>
-            <View style={styles.postHeader}>
-              <View style={styles.avatar}>
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                  {lop.tenGV?.charAt(0)}
-                </Text>
-              </View>
+          <TouchableOpacity>
+            <View style={styles.postCard}>
+              <View style={styles.postHeader}>
+                <View style={styles.avatar}>
+                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                    {lop.tenGV?.charAt(0)}
+                  </Text>
+                </View>
 
-              <View>
-                <Text style={styles.postAuthor}>{lop.tenGV}</Text>
-                <Text style={styles.postDate}>
-                  {new Date(bv.ngayTao).toLocaleDateString()}
-                </Text>
+                <View>
+                  <Text style={styles.postAuthor}>{lop.tenGV}</Text>
+                  <Text style={styles.postDate}>
+                    {new Date(bv.ngayTao).toLocaleDateString()}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.postTitle}>{bv.tieuDe}</Text>
+              <Text style={styles.postContent}>{bv.noiDung}</Text>
+              <View style={styles.commentBox}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Thêm nhận xét trong lớp học"
+                  placeholderTextColor="#2563eb"
+                  multiline
+                  autoCorrect={true}
+                  autoCapitalize="sentences"
+                  keyboardType="default"
+                  textBreakStrategy="simple"
+                />
               </View>
             </View>
-            <Text style={styles.postTitle}>{bv.tieuDe}</Text>
-            <Text style={styles.postContent}>{bv.noiDung}</Text>
-            <View style={styles.commentBox}>
-              <Text style={styles.commentText}>Thêm nhận xét trong lớp học</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </Link>
       ))}
+
     </ScrollView>
   );
 }
@@ -134,9 +160,10 @@ const styles = StyleSheet.create({
   className: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "#fff", // Chỉnh màu chữ thành trắng
   },
   classMeta: {
-    color: "#555",
+    color: "#fff", // Chỉnh màu chữ thành trắng
   },
   sectionTitle: {
     fontSize: 17,
@@ -214,5 +241,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#444",
     flexShrink: 1,
+  },
+  commentInput: {
+    fontSize: 14,
+    color: "#111827",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: "#fff",
+  },
+  notifyInput: {
+    fontSize: 14,
+    color: "#111827",
+    flex: 1,
+    backgroundColor: "#f9fafb",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 });

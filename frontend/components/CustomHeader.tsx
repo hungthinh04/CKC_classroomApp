@@ -4,7 +4,7 @@ import { useRoute } from "@react-navigation/native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
+import { API_BASE_URL } from "@/constants/api";
 export default function CustomHeader() {
   const route = useRoute();
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -14,7 +14,7 @@ export default function CustomHeader() {
   const { tenLHP } = useLopHocPhan();
   useEffect(() => {
     if (!id) return;
-    fetch(`http://192.168.1.102:3001/lophophan/${id}`)
+    fetch(`${API_BASE_URL}/lophophan/${id}`)
       .then((res) => res.json())
       .then((data) => setTitle(data.tenLHP));
   }, [id]);

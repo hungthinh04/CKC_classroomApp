@@ -1,59 +1,20 @@
-import CustomHeader from "@/components/CustomHeader";
 import { LopHocPhanProvider } from "@/context/_context";
-import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
-// 👈 wrap context ở đây
+import { Stack } from "expo-router";
+import TabsLayout from "."; // 👈 import component Tabs
 
 export default function Layout() {
   return (
     <LopHocPhanProvider>
-      <Tabs
-        screenOptions={{
-          header: () => <CustomHeader />,
-          tabBarStyle: {
-            backgroundColor: "#000",
-            paddingBottom: 6,
-            paddingTop: 6,
-          },
-        }}
-      >
-        <Tabs.Screen
+      <Stack>
+        <Stack.Screen
           name="(tabs)/dashboard"
-          options={{
-            title: "Bảng tin",
-            tabBarIcon: ({ color }) => (
-              <Ionicons name="home" size={24} color={color} />
-            ),
-          }}
+          options={{ title: "Bảng tin lớp học" }}
         />
-        <Tabs.Screen
-          name="(tabs)/notifications"
-          options={{
-            title: "Bài tập",
-            tabBarIcon: ({ color }) => (
-              <Ionicons name="book" size={24} color={color} />
-            ),
-          }}
+        <Stack.Screen
+          name="(tabs)/baiviet/[id]"
+          options={{ title: "Chi tiết bài viết" }}
         />
-        <Tabs.Screen
-          name="(tabs)/peopleScreen"
-          options={{
-            title: "Người dùng",
-            tabBarIcon: ({ color }) => (
-              <Ionicons name="people" size={24} color={color} />
-            ),
-          }}
-        />
-        {/* <Tabs.Screen
-        name="(tabs)/material"
-        options={{
-          title: "Tài liệu",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="document-text" size={24} color={color} />
-          ),
-        }}
-      /> */}
-      </Tabs>
+      </Stack>
     </LopHocPhanProvider>
   );
 }

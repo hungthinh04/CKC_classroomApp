@@ -4,6 +4,7 @@ import { useLopHocPhan } from "@/context/_context";
 import { useAuth } from "@/stores/useAuth";
 import  DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams } from "expo-router";
+import { API_BASE_URL } from "@/constants/api";
 
 export default function TaoBaiVietScreen() {
   const { id: maLHP } = useLocalSearchParams();
@@ -31,7 +32,7 @@ const [showDatePicker, setShowDatePicker] = useState(false);
 
     if (loaiBV === 1) data.hanNop = hanNop.toISOString();
 
-    await fetch("http://192.168.1.102:3001/baiviet", {
+    await fetch(`${API_BASE_URL}/baiviet`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

@@ -1,7 +1,7 @@
 import { useLopHocPhan } from "@/context/_context";
 import { useEffect, useState } from "react";
 import { FlatList, Text, View } from "react-native";
-
+import { API_BASE_URL } from "@/constants/api";
 export default function PeopleScreen() {
   const { id, tenLHP } = useLopHocPhan();
   type User = {
@@ -18,26 +18,26 @@ export default function PeopleScreen() {
 
     const fetchData = async () => {
       // 1. Fetch lớp học phần
-      const lhpRes = await fetch(`http://192.168.1.102:3001/lophophan/${id}`);
+      const lhpRes = await fetch(`${API_BASE_URL}/lophophan/${id}`);
       const lhp = await lhpRes.json();
 
       // 2. Fetch giảng viên từ maGV
       const gvRes = await fetch(
-        `http://192.168.1.102:3001/giangvien?id=${lhp.maGV}`
+        `${API_BASE_URL}/giangvien?id=${lhp.maGV}`
       );
       const [gv] = await gvRes.json();
       setGiangVien(gv);
 
       // 3. Fetch sinh viên
       const sv_lhpRes = await fetch(
-        `http://192.168.1.102:3001/sinhvien_lhp?maLHP=${id}`
+        `${API_BASE_URL}/sinhvien_lhp?maLHP=${id}`
       );
       const sv_lhp = await sv_lhpRes.json();
 
       const svs = await Promise.all(
         sv_lhp.map(async (item: any) => {
           const res = await fetch(
-            `http://192.168.1.102:3001/sinhvien?maSV=${item.maSV}`
+            `${API_BASE_URL}/sinhvien?maSV=${item.maSV}`
           );
           const [sv] = await res.json();
           return sv;

@@ -1,7 +1,7 @@
 import { useLopHocPhan } from "@/context/_context";
 import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
-
+import { API_BASE_URL } from "@/constants/api";
 type BaiViet = {
   id: number;
   tieuDe: string;
@@ -26,7 +26,7 @@ export default function BaiTapScreen() {
     const fetchTasks = async () => {
       try {
         const res = await fetch(
-          `http://192.168.1.102:3001/baiviet?maLHP=${id}&loaiBV=1`
+          `${API_BASE_URL}/baiviet?maLHP=${id}&loaiBV=1`
         );
         const data = await res.json();
         console.log("📦 Dữ liệu bài tập:", data);

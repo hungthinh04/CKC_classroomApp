@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Button, Text, TextInput, View } from "react-native";
 import { useAuth } from "../../stores/useAuth";
+import { API_BASE_URL } from "@/constants/api";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -10,7 +11,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://192.168.1.102:3001/users");
+      const res = await fetch(`${API_BASE_URL}/users`);
       const users = await res.json();
 
       const user = users.find(
