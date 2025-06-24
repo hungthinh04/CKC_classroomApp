@@ -73,7 +73,7 @@
     {
       "id": "1",
       "tieuDe": "Bai tap 1",
-      "noiDung": "Viet app hello world",
+      "noiDung": "Về Việc Nộp Đồ Án\nCác nhóm sẽ nộp kết quả của đồ án bên trong thư mục đã chia sẻ trước đó (link các nhóm đã điền). Tạo Bên trong thư mục đặt tên là BaoCao_Final, trong đó sẽ chứa các thư mục sau:\nReport: chứa file báo cáo (word/pdf), file tự chấm điểm\nSource: Chứa mã nguồn ứng dụng di động và webAPI\nDB: chứa file script cơ sở dữ liệu (gồm cấu trúc lẫn dữ liệu)\nVideo: chứa file video quay tất cả các chức năng demo của ứng dụng (lưu ý: từng màn hình chức năng nên ghi trên màn hình gồm: tên chức năng, người thiết kế giao diện (designer), người thực hiện code xử lý chức năng (coder))\nfile text đặt tên là Note.txt: ghi chú những chức năng bổ sung mà khi báo cáo với GV chưa làm được (ghi rõ thành viên nào làm).\nHạn nộp: 23h59 21/01/2025\nLưu ý: các nhóm có thể bổ sung các công việc chưa được (so với lúc chấm) và thể hiện qua video kèm file Note, GV sẽ chấm bổ sung những phần này (những chức năng chưa hoàn chỉnh nhưng có giao diện nhóm nên liệt kê và thể hiện trên video demo)",
       "ngayTao": "2024-09-05",
       "loaiBV": 1,
       "maTK": 1,

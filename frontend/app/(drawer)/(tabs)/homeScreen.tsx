@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useNavigation } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/constants/api";
 import {
   Image,
   ScrollView,
@@ -33,8 +34,8 @@ export default function HomeScreen() {
   const fetchLHP = async () => {
     try {
       const [resLHP, resGV] = await Promise.all([
-        fetch("http://192.168.1.102:3001/lophophan"),
-        fetch("http://192.168.1.102:3001/giangvien"),
+        fetch(`${API_BASE_URL}/lophophan`),
+        fetch(`${API_BASE_URL}/giangvien`),
       ]);
       const lhpData = await resLHP.json();
       const gvData = await resGV.json();
