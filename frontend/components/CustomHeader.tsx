@@ -21,40 +21,41 @@ export default function CustomHeader() {
 
   const renderIcons = () => {
     switch (route.name) {
-      case "(tabs)/dashboard":
-        return (
-          <>
-            <TouchableOpacity>
-              <Ionicons name="filter-outline" size={22} color="#ccc" />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons name="camera-outline" size={22} color="#ccc" />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
-            </TouchableOpacity>
-          </>
-        );
-      case "(tabs)/notifications":
-        return (
-          <>
-            <TouchableOpacity>
-              <Ionicons name="filter-outline" size={22} color="#ccc" />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
-            </TouchableOpacity>
-          </>
-        );
-      case "(tabs)/peopleScreen":
-        return (
-          <TouchableOpacity>
-            <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
-          </TouchableOpacity>
-        );
-      default:
-        return null;
-    }
+  case "dashboard":
+    return (
+      <>
+        <TouchableOpacity>
+          <Ionicons name="filter-outline" size={22} color="#ccc" />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Ionicons name="camera-outline" size={22} color="#ccc" />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+        </TouchableOpacity>
+      </>
+    );
+  case "notifications":
+    return (
+      <>
+        <TouchableOpacity>
+          <Ionicons name="filter-outline" size={22} color="#ccc" />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+        </TouchableOpacity>
+      </>
+    );
+  case "peopleScreen":
+    return (
+      <TouchableOpacity>
+        <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+      </TouchableOpacity>
+    );
+  default:
+    return null;
+}
+
   };
 
   return (
