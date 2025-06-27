@@ -1,18 +1,9 @@
-import {
-  List,
-  Datagrid,
-  TextField,
-  EditButton,
-  Edit,
-  SimpleForm,
-  TextInput,
-  Create,
-} from "react-admin";
+// src/resources/Khoa.js
+import { List, Datagrid, TextField, EditButton, Edit, SimpleForm, TextInput, Create } from 'react-admin';
 
 export const KhoaList = () => (
   <List>
     <Datagrid rowClick="edit">
-      <TextField source="id" />
       <TextField source="MaKhoa" label="Mã Khoa" />
       <TextField source="TenKhoa" label="Tên Khoa" />
       <EditButton />
@@ -23,7 +14,6 @@ export const KhoaList = () => (
 export const KhoaEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="id" disabled />
       <TextInput source="maKhoa" label="Mã Khoa" />
       <TextInput source="tenKhoa" label="Tên Khoa" />
     </SimpleForm>

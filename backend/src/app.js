@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const baivietRoutes = require('./routes/baiviet');
+// const giangvienRoutes = require('./routes/giangvien');
 
 
 const adminRoutes = require('./routes/adminRoutes');
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use('/api', authRoutes);
 app.use('/api', userRoutes);
 app.use('/api', baivietRoutes);
+app.use('/api', require('./routes/giangvien'));
 app.use('/admin', adminRoutes);
 
 module.exports = app;

@@ -10,18 +10,19 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://192.168.1.102:3001/users");
-      const users = await res.json();
+      const res = await fetch("http://192.168.1.104:3000/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, matKhau }),
+      });
 
-      const user = users.find(
-        (u: any) => u.email === email && u.matKhau === matKhau
-      );
+      const data = await res.json();
 
-      if (user) {
-        await login(user);
+      if (res.ok) {
+        await login(data); // lưu thông tin giảng viên, token nếu cần
         router.replace("/(drawer)/(tabs)/homeScreen");
       } else {
-        Alert.alert("Sai tài khoản hoặc mật khẩu");
+        Alert.alert(data.message || "Sai tài khoản hoặc mật khẩu");
       }
     } catch (err) {
       Alert.alert("Lỗi kết nối");

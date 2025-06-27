@@ -1,6 +1,12 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, Button } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Button,
+} from "react-native";
 import { useAuth } from "@/stores/useAuth";
 import { useNavigation } from "@react-navigation/native";
 
@@ -12,7 +18,7 @@ export default function BaiVietDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://192.168.1.102:3001/baiviet/${id}`)
+    fetch(`http://192.168.1.103:3001/baiviet/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setBaiViet(data);
@@ -44,7 +50,8 @@ export default function BaiVietDetail() {
     <View style={styles.container}>
       <Text style={styles.title}>{baiViet.tieuDe}</Text>
       <Text style={styles.meta}>
-        Người đăng: GV#{baiViet.maGV} – {baiViet.loaiBV === 1 ? "Bài tập" : "Bài viết"}
+        Người đăng: GV#{baiViet.maGV} –{" "}
+        {baiViet.loaiBV === 1 ? "Bài tập" : "Bài viết"}
       </Text>
       {baiViet.hanNop && (
         <Text style={styles.deadline}>🕒 Hạn nộp: {baiViet.hanNop}</Text>
@@ -63,7 +70,12 @@ export default function BaiVietDetail() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#111" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#111" },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#111",
+  },
   title: { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 8 },
   meta: { color: "#aaa", fontStyle: "italic", marginBottom: 4 },
   deadline: { color: "#f87171", fontWeight: "600", marginBottom: 8 },

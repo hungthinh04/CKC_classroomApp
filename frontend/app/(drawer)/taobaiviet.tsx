@@ -31,7 +31,7 @@ const [showDatePicker, setShowDatePicker] = useState(false);
 
     if (loaiBV === 1) data.hanNop = hanNop.toISOString();
 
-    await fetch("http://192.168.1.102:3001/baiviet", {
+    await fetch("http://192.168.1.103:3001/baiviet", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

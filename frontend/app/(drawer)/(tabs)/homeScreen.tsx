@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../../stores/useAuth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type LopHocPhan = {
   id: number;
@@ -18,45 +19,69 @@ type LopHocPhan = {
   namHoc: number;
   maGV: number;
   tenGV?: string;
-  moTa?: string;
+  tenMH?: string;
+  maLop?: string;
 };
 
 export default function HomeScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout,checkLogin } = useAuth();
   const [lophocphan, setLophocphan] = useState<LopHocPhan[]>([]);
-
   const navigation = useNavigation();
+
   const handleLogout = async () => {
     await logout();
     router.replace("/(auth)/login");
   };
+
   const fetchLHP = async () => {
     try {
-      const [resLHP, resGV] = await Promise.all([
-        fetch("http://192.168.1.102:3001/lophophan"),
-        fetch("http://192.168.1.102:3001/giangvien"),
-      ]);
-      const lhpData = await resLHP.json();
-      const gvData = await resGV.json();
+      if (!user?.id) return;
 
-      const combined = lhpData.map((l: LopHocPhan) => {
-        const gv = gvData.find((g: any) => Number(g.id) === Number(l.maGV));
-        return {
-          ...l,
-          tenGV: gv ? `${gv.hoGV} ${gv.tenGV}` : "Không rõ",
-        };
-      });
-
-      setLophocphan(combined);
+      const token = await AsyncStorage.getItem("token");
+      const res = await fetch(
+        `http://192.168.1.104:3000/api/giangvien/${user.id}/lophocphan`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await res.json();
+      const mapped = data.map((item: any) => ({
+        id: item.ID,
+        tenLHP: item.TenLHP,
+        hocKy: item.HocKy,
+        namHoc: item.NamHoc,
+        maGV: item.MaGV,
+        tenGV: item.TenGV || item.TenMH || "",
+        tenMH: item.TenMH || "",
+        maLop: item.MaLop || "",
+      }));
+      setLophocphan(mapped);
     } catch (error) {
-      console.error("Fetch error:", error);
+      console.error("Fetch LHP error:", error);
     }
   };
 
   useEffect(() => {
-    fetchLHP();
+    const init = async () => {
+      await checkLogin(); // Khôi phục thông tin từ AsyncStorage
+    };
+    init();
   }, []);
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchLHP(); // chỉ gọi khi đã có user
+    }
+  }, [user]);
+
+  const getInitial = () => {
+    if (user?.email) return user.email.charAt(0).toUpperCase();
+    return "U";
+  };
+  console.log(lophocphan);
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -71,9 +96,8 @@ export default function HomeScreen() {
           <Text style={{ fontWeight: "500" }}>CKC</Text> Classroom
         </Text>
         <View style={styles.avatar}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>U</Text>
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>{getInitial()}</Text>
         </View>
-
         <Ionicons
           name="ellipsis-vertical"
           size={24}
@@ -95,39 +119,45 @@ export default function HomeScreen() {
 
       {/* Class Cards */}
       <ScrollView style={styles.scroll}>
-        {lophocphan.map((cls, i) => (
-          <TouchableOpacity
-            key={cls.id}
-            style={styles.card}
-            onPress={() =>
-              router.push({
-                pathname: "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
-                params: { id: cls.id.toString(), tenLHP: cls.tenLHP }, // 👈 truyền tên lớp
-              })
-            }
-          >
-            <Image
-              source={require("../../../assets/images/icon.png")}
-              style={styles.bgImage}
-            />
-            <View style={styles.overlay} />
-            <View style={styles.cardContent}>
-              <View style={styles.classInfo}>
-                <Text style={styles.className}>{cls.tenLHP}</Text>
-                <Text style={styles.term}>
-                  HK{cls.hocKy} – Năm học: {cls.namHoc}
-                </Text>
+        {lophocphan.length === 0 ? (
+          <Text style={{ color: "white", textAlign: "center", marginTop: 20 }}>
+            Không có lớp học phần nào.
+          </Text>
+        ) : (
+          lophocphan.map((cls) => (
+            <TouchableOpacity
+              key={cls.id}
+              style={styles.card}
+              onPress={() =>
+                router.push({
+                  pathname: "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
+                  params: { id: cls.id.toString(), tenLHP: cls.tenLHP },
+                })
+              }
+            >
+              <Image
+                source={require("../../../assets/images/icon.png")}
+                style={styles.bgImage}
+              />
+              <View style={styles.overlay} />
+              <View style={styles.cardContent}>
+                <View style={styles.classInfo}>
+                  <Text style={styles.className}>{cls.tenLHP}</Text>
+                  <Text style={styles.term}>
+                    HK{cls.hocKy} – Năm học: {cls.namHoc}
+                  </Text>
+                </View>
+                <Text style={styles.subject}>{cls.tenGV}</Text>
               </View>
-              <Text style={styles.subject}>{cls.tenGV}</Text>
-            </View>
-            <Ionicons
-              name="ellipsis-vertical"
-              size={20}
-              color="white"
-              style={styles.cardMenu}
-            />
-          </TouchableOpacity>
-        ))}
+              <Ionicons
+                name="ellipsis-vertical"
+                size={20}
+                color="white"
+                style={styles.cardMenu}
+              />
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </View>
   );

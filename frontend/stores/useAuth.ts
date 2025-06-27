@@ -1,10 +1,13 @@
-import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from "zustand";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type User = {
   id: number;
   email: string;
+  matKhau: string;
   quyen: number; // 0: GV, 1: SV
+  maNguoiDung: string; // 0: GV, 1: SV
+  trangThai: number; // 0: GV, 1: SV
 };
 
 type excerciseList = {
@@ -29,21 +32,32 @@ export const useAuth = create<AuthStore>((set) => ({
   user: null,
 
   login: async (userData) => {
-    await AsyncStorage.setItem('loggedIn', 'true');
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
-    set({ isLoggedIn: true, user: userData });
+    // Ghi nhận rõ ràng token + user từ backend
+    const token = userData.token;
+    const user = userData.user;
+
+    if (!token || !user) {
+      console.warn("Thiếu token hoặc user khi đăng nhập");
+      return;
+    }
+
+    await AsyncStorage.setItem("loggedIn", "true");
+    await AsyncStorage.setItem("token", token);
+    await AsyncStorage.setItem("user", JSON.stringify(user));
+
+    set({ isLoggedIn: true, user });
   },
 
   logout: async () => {
-    await AsyncStorage.removeItem('loggedIn');
-    await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem("loggedIn");
+    await AsyncStorage.removeItem("user");
     set({ isLoggedIn: false, user: null });
   },
 
   checkLogin: async () => {
-    const value = await AsyncStorage.getItem('loggedIn');
-    const userStr = await AsyncStorage.getItem('user');
+    const value = await AsyncStorage.getItem("loggedIn");
+    const userStr = await AsyncStorage.getItem("user");
     const userData = userStr ? JSON.parse(userStr) : null;
-    set({ isLoggedIn: value === 'true', user: userData });
+    set({ isLoggedIn: value === "true", user: userData });
   },
 }));

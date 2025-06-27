@@ -16,15 +16,15 @@ export default function LopHocPhanDetail() {
   const { id, tenLHP } = useLopHocPhan();
   const [lop, setLop] = useState<any>(null);
   const [baiViet, setBaiViet] = useState<any[]>([]);
-const { user } = useAuth();
+  const { user } = useAuth();
   useEffect(() => {
     if (!id) return;
 
     const fetchData = async () => {
       const [resLHP, resGV, resBV] = await Promise.all([
-        fetch(`http://192.168.1.102:3001/lophophan/${id}`),
-        fetch(`http://192.168.1.102:3001/giangvien`),
-        fetch(`http://192.168.1.102:3001/baiviet?maLHP=${id}`),
+        fetch(`http://192.168.1.104:3001/lophophan/${id}`),
+        fetch(`http://192.168.1.104:3001/giangvien`),
+        fetch(`http://192.168.1.104:3001/baiviet?maLHP=${id}`),
       ]);
 
       const lhp = await resLHP.json();
@@ -86,14 +86,13 @@ const { user } = useAuth();
       ))}
 
       {user?.quyen === 0 && (
-  <TouchableOpacity
-    style={styles.fab}
-    onPress={() => router.push("/taobaiviet")}
-  >
-    <Ionicons name="add" size={28} color="white" />
-  </TouchableOpacity>
-)}
-
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push("/taobaiviet")}
+        >
+          <Ionicons name="add" size={28} color="white" />
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 }
@@ -168,16 +167,15 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   fab: {
-  position: "absolute",
-  bottom: 30,
-  right: 20,
-  backgroundColor: "#4f46e5",
-  width: 50,
-  height: 50,
-  borderRadius: 25,
-  alignItems: "center",
-  justifyContent: "center",
-  elevation: 5,
-},
-
+    position: "absolute",
+    bottom: 30,
+    right: 20,
+    backgroundColor: "#4f46e5",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+  },
 });
