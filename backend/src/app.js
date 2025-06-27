@@ -23,5 +23,8 @@ app.use('/api', userRoutes);
 app.use('/api', baivietRoutes);
 app.use('/api', require('./routes/giangvien'));
 app.use('/admin', adminRoutes);
+app.use('/lophocphan', require('./routes/lopHocPhan'));
+app.use('/giangvien', require('./routes/giangvien'));
+app.use('/baiviet', require('./routes/baiviet'));
 
 module.exports = app;

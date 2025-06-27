@@ -8,7 +8,9 @@ type User = {
   quyen: number; // 0: GV, 1: SV
   maNguoiDung: string; // 0: GV, 1: SV
   trangThai: number; // 0: GV, 1: SV
+  ngayTao?: string;
 };
+
 
 type excerciseList = {
   id: number;
@@ -20,6 +22,7 @@ type excerciseList = {
 };
 
 type AuthStore = {
+  
   isLoggedIn: boolean;
   user: User | null;
   login: (userData: User) => Promise<void>;

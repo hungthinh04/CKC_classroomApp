@@ -68,3 +68,62 @@ exports.getLopHocPhanFullInfoByGV = async (req, res) => {
     res.status(500).json({ message: "Không thể lấy lớp học phần chi tiết" });
   }
 };
+
+
+exports.getDashboardLHP = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.request()
+      .input("MaLHP", id)
+      .query(`
+        SELECT 
+          L.TenLHP,
+          L.HocKy,
+          L.NamHoc,
+          (GV.HoGV + ' ' + GV.TenGV) AS TenGV,
+          MH.TenMH,
+          LH.MaLop,
+          (
+            SELECT COUNT(*) 
+            FROM SINHVIEN_LHP 
+            WHERE MaLHP = L.ID
+          ) AS TongSinhVien,
+          (
+            SELECT COUNT(*) 
+            FROM BAIVIET 
+            WHERE MaLHP = L.ID
+          ) AS TongBaiViet,
+          (
+            SELECT COUNT(*) 
+            FROM BAIVIET 
+            WHERE MaLHP = L.ID AND LoaiBV = 1
+          ) AS TongBaiTap,
+          (
+            SELECT COUNT(*) 
+            FROM SINHVIEN_BAITAP 
+            WHERE MaBaiViet IN (
+              SELECT ID FROM BAIVIET WHERE MaLHP = L.ID
+            )
+          ) AS SoLuongDaNop
+        FROM LOPHOCPHAN L
+        JOIN GIANGVIENN GV ON L.MaGV = GV.ID
+        JOIN MONHOC MH ON L.MaMH = MH.ID
+        JOIN LOPHOC LH ON L.MaLH = LH.ID
+        WHERE L.ID = @MaLHP
+      `);
+
+    res.json(result.recordset[0]);
+  } catch (error) {
+    console.error("Lỗi dashboard:", error);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+};
+
+exports.getAllGiangVien = async (req, res) => {
+  try {
+    const result = await pool.request().query('SELECT * FROM GIANGVIEN');
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách giảng viên' });
+  }
+};

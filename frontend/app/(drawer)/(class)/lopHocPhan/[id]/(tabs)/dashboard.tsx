@@ -12,36 +12,39 @@ import {
   View,
 } from "react-native";
 
+type BaiViet = {
+  ID: number;
+  tieuDe: string;
+  noiDung: string;
+  loaiBV: string;
+  NgayTao?: string;
+  maLHP: number;
+  maGV: number;
+
+};
+
 export default function LopHocPhanDetail() {
   const { id, tenLHP } = useLopHocPhan();
   const [lop, setLop] = useState<any>(null);
-  const [baiViet, setBaiViet] = useState<any[]>([]);
+  const [baiViet, setBaiViet] = useState<BaiViet[]>([]);
   const { user } = useAuth();
   useEffect(() => {
     if (!id) return;
 
     const fetchData = async () => {
-      const [resLHP, resGV, resBV] = await Promise.all([
-        fetch(`http://192.168.1.104:3001/lophophan/${id}`),
-        fetch(`http://192.168.1.104:3001/giangvien`),
-        fetch(`http://192.168.1.104:3001/baiviet?maLHP=${id}`),
-      ]);
-
-      const lhp = await resLHP.json();
-      const gvs = await resGV.json();
-      const bvs = await resBV.json();
-
-      const gv = gvs.find((g: any) => Number(g.id) === lhp.maGV);
-      lhp.tenGV = gv ? `${gv.hoGV} ${gv.tenGV}` : "Không rõ";
-
-      setLop(lhp);
-      setBaiViet(bvs);
-    };
+    try {
+      const res = await fetch(`http://192.168.1.104:3000/baiviet?maLHP=${id}`);
+      const data = await res.json();
+      setBaiViet(data);
+    } catch (err) {
+      console.error("Lỗi khi lấy bài viết:", err);
+    }
+  };
     fetchData();
   }, [id]);
 
-  if (!lop) return null;
-
+  // if (!lop) return null;
+console.log(id, tenLHP, baiViet);
   return (
     <ScrollView style={styles.container}>
       {/* Header lớp */}
@@ -51,11 +54,11 @@ export default function LopHocPhanDetail() {
           style={styles.coverImg}
         />
         <View style={styles.headerContent}>
-          <Text style={styles.className}>{lop.tenLHP}</Text>
-          <Text style={styles.classMeta}>{lop.tenGV}</Text>
-          <Text style={styles.classMeta}>
-            Học kỳ {lop.hocKy} - Năm học {lop.namHoc}
-          </Text>
+         <Text style={styles.className}>{tenLHP}</Text>
+<Text style={styles.classMeta}>GV: {user?.email}</Text><Text style={styles.classMeta}>
+  Ngày tạo: {baiViet[0]?.NgayTao ? new Date(baiViet[0].NgayTao).toLocaleDateString('vi-VN') : "Không rõ"}
+</Text>
+
         </View>
       </View>
 
@@ -63,18 +66,18 @@ export default function LopHocPhanDetail() {
       <Text style={styles.sectionTitle}>Bảng tin lớp học</Text>
       {baiViet.map((bv) => (
         <TouchableOpacity
-          key={bv.id}
+          key={bv.ID}
           style={styles.postCard}
-          onPress={() => router.push(`../../../../(bv)/baiviet/${bv.id}`)}
+          onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
         >
           <View style={styles.postHeader}>
             <View style={styles.avatar}>
               <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                {lop.tenGV?.charAt(0)}
+                {/* {lop.tenGV?.charAt(0)} */}
               </Text>
             </View>
             <View>
-              <Text style={styles.postAuthor}>{lop.tenGV}</Text>
+              {/* <Text style={styles.postAuthor}>{lop.tenGV}</Text> */}
               <Text style={styles.postDate}>
                 {new Date(bv.ngayTao).toLocaleDateString()}
               </Text>
