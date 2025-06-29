@@ -22,19 +22,28 @@ const { pool, sql } = require('../config/db');
 //   }
 // };
 
-
 exports.getBaiVietByLHP = async (req, res) => {
-  const { maLHP } = req.query;
+  const maLHP = req.params.id;
   try {
     const result = await pool.request()
       .input('MaLHP', sql.Int, maLHP)
-      .query('SELECT * FROM BAIVIET WHERE MaLHP = @MaLHP');
+      .query(`
+        SELECT 
+          bv.ID, bv.TieuDe, bv.NgayTao, bv.NoiDung, bv.LoaiBV, 
+          bv.MaBaiViet, bv.TrangThai, gv.TenGV,gv.HoGV
+        FROM BAIVIET bv
+        JOIN LOPHOCPHAN lhp ON bv.MaLHP = lhp.ID
+        JOIN GIANGVIENN gv ON lhp.MaGV = gv.ID
+        WHERE bv.MaLHP = @MaLHP
+      `);
     res.json(result.recordset);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Lỗi khi lấy bài viết' });
   }
-  console.log("query:", req.query);
 };
+
+
 
 exports.createBaiViet = async (req, res) => {
   const maGV = req.params.id;

@@ -14,37 +14,61 @@ import {
 
 type BaiViet = {
   ID: number;
-  tieuDe: string;
-  noiDung: string;
-  loaiBV: string;
+  TieuDe: string;
   NgayTao?: string;
-  maLHP: number;
-  maGV: number;
+  NoiDung: string;
+  LoaiBV: number;
+  MaLHP: number;
+  MaGV?: number;
+  MaTK?: number;
+  MaBaiViet?: string;
+  TrangThai?: number;
+  HoGV: string;
+  TenGV: string;
+};
 
+type LopHocPhan = {
+  id: number;
+  tenLHP: string;
+  hocKy: number;
+  namHoc: number;
+  maGV: number;
+  tenGV?: string;
+  tenMH?: string;
+  maLop?: string;
+  NgayTao?: string;
 };
 
 export default function LopHocPhanDetail() {
   const { id, tenLHP } = useLopHocPhan();
-  const [lop, setLop] = useState<any>(null);
+const [lop, setLop] = useState<LopHocPhan | null>(null);
+
   const [baiViet, setBaiViet] = useState<BaiViet[]>([]);
   const { user } = useAuth();
   useEffect(() => {
     if (!id) return;
 
     const fetchData = async () => {
-    try {
-      const res = await fetch(`http://192.168.1.104:3000/baiviet?maLHP=${id}`);
-      const data = await res.json();
-      setBaiViet(data);
-    } catch (err) {
-      console.error("Lỗi khi lấy bài viết:", err);
-    }
-  };
+      try {
+        const res = await fetch(
+          `http://192.168.1.104:3000/lophocphan/${id}`
+        );
+        const res1 = await fetch(`http://192.168.1.104:3000/baiviet/${id}`);
+
+        const data = await res.json();
+        const data1 = await res1.json();
+    
+        setLop(data);
+        setBaiViet(data1);
+      } catch (err) {
+        console.error("Lỗi khi lấy bài viết:", err);
+      }
+    };
     fetchData();
   }, [id]);
 
   // if (!lop) return null;
-console.log(id, tenLHP, baiViet);
+  console.log(id, tenLHP, baiViet);
   return (
     <ScrollView style={styles.container}>
       {/* Header lớp */}
@@ -54,39 +78,49 @@ console.log(id, tenLHP, baiViet);
           style={styles.coverImg}
         />
         <View style={styles.headerContent}>
-         <Text style={styles.className}>{tenLHP}</Text>
-<Text style={styles.classMeta}>GV: {user?.email}</Text><Text style={styles.classMeta}>
-  Ngày tạo: {baiViet[0]?.NgayTao ? new Date(baiViet[0].NgayTao).toLocaleDateString('vi-VN') : "Không rõ"}
-</Text>
-
+          <Text style={styles.className}>{tenLHP}</Text>
+          <Text style={styles.classMeta}>GV: {baiViet[0]?.HoGV} {baiViet[0]?.TenGV}</Text>
+          <Text style={styles.classMeta}>
+            Ngày tạo:{" "}
+            {lop?.NgayTao
+              ? new Date(lop.NgayTao).toLocaleDateString("vi-VN")
+              : "Không rõ"}
+          </Text>
         </View>
       </View>
 
       {/* Danh sách bài viết */}
       <Text style={styles.sectionTitle}>Bảng tin lớp học</Text>
-      {baiViet.map((bv) => (
-        <TouchableOpacity
-          key={bv.ID}
-          style={styles.postCard}
-          onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
-        >
-          <View style={styles.postHeader}>
-            <View style={styles.avatar}>
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                {/* {lop.tenGV?.charAt(0)} */}
-              </Text>
+      {baiViet.length === 0 ? (
+        <Text style={{ textAlign: "center", color: "#666" }}>
+          Chưa có bài viết nào.
+        </Text>
+      ) : (
+        baiViet.map((bv) => (
+          <TouchableOpacity
+            key={bv.ID}
+            style={styles.postCard}
+            onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
+          >
+            <View style={styles.postHeader}>
+              <View style={styles.avatar}>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                  {user?.email?.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.postDate}>
+                  {bv.NgayTao
+                    ? new Date(bv.NgayTao).toLocaleDateString("vi-VN")
+                    : "Không rõ"}
+                </Text>
+              </View>
             </View>
-            <View>
-              {/* <Text style={styles.postAuthor}>{lop.tenGV}</Text> */}
-              <Text style={styles.postDate}>
-                {new Date(bv.ngayTao).toLocaleDateString()}
-              </Text>
-            </View>
-          </View>
-          <Text style={styles.postTitle}>{bv.tieuDe}</Text>
-          <Text style={styles.postContent}>{bv.noiDung}</Text>
-        </TouchableOpacity>
-      ))}
+            <Text style={styles.postTitle}>{bv.TieuDe}</Text>
+            <Text style={styles.postContent}>{bv.NoiDung}</Text>
+          </TouchableOpacity>
+        ))
+      )}
 
       {user?.quyen === 0 && (
         <TouchableOpacity

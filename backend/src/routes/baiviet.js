@@ -9,6 +9,6 @@ const controller = require('../controllers/baivietController');
 
 // router.get('/lophophan/:id/baiviet',auth,controller.getBaiVietByLHP);
 router.post('/giangvien/:id/baiviet', auth,checkGiangVien, controller.createBaiViet);
-router.get('/', controller.getBaiVietByLHP);
+router.get('/:id', controller.getBaiVietByLHP);
 
 module.exports = router;
