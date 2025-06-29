@@ -1,8 +1,7 @@
 import CustomHeader from "@/components/CustomHeader";
 import { LopHocPhanProvider } from "@/context/_context";
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-// 👈 wrap context ở đây
 
 export default function Layout() {
   return (
@@ -11,10 +10,17 @@ export default function Layout() {
         screenOptions={{
           header: () => <CustomHeader />,
           tabBarStyle: {
-            backgroundColor: "#000",
+            backgroundColor: "#f9f9f9", // nền trắng nhạt
             paddingBottom: 6,
             paddingTop: 6,
+            borderTopWidth: 0.5,
+            borderColor: "#ddd",
           },
+          tabBarLabelStyle: {
+            fontSize: 12,
+          },
+          tabBarActiveTintColor: "#007bff", // màu xanh cho tab active
+          tabBarInactiveTintColor: "#444",  // màu xám đậm
         }}
       >
         <Tabs.Screen
@@ -22,37 +28,28 @@ export default function Layout() {
           options={{
             title: "Bảng tin",
             tabBarIcon: ({ color }) => (
-              <Ionicons name="home" size={24} color={color} />
+              <MaterialIcons name="chat-bubble-outline" size={24} color={color} />
             ),
           }}
         />
         <Tabs.Screen
           name="(tabs)/notifications"
           options={{
-            title: "Bài tập",
+            title: "Bài tập trên lớp",
             tabBarIcon: ({ color }) => (
-              <Ionicons name="book" size={24} color={color} />
+              <MaterialIcons name="assignment" size={24} color={color} />
             ),
           }}
         />
         <Tabs.Screen
           name="(tabs)/peopleScreen"
           options={{
-            title: "Người dùng",
+            title: "Mọi người",
             tabBarIcon: ({ color }) => (
-              <Ionicons name="people" size={24} color={color} />
+              <MaterialIcons name="group" size={24} color={color} />
             ),
           }}
         />
-        {/* <Tabs.Screen
-        name="(tabs)/material"
-        options={{
-          title: "Tài liệu",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="document-text" size={24} color={color} />
-          ),
-        }}
-      /> */}
       </Tabs>
     </LopHocPhanProvider>
   );

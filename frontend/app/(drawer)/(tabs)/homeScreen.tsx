@@ -39,7 +39,7 @@ export default function HomeScreen() {
 
       const token = await AsyncStorage.getItem("token");
       const res = await fetch(
-        `http://192.168.1.104:3000/api/giangvien/${user.id}/lophocphan`,
+        `http://192.168.1.105:3000/api/giangvien/${user.id}/lophocphan`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

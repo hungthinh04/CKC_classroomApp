@@ -26,7 +26,7 @@ export default function BaiTapScreen() {
     const fetchTasks = async () => {
       try {
         const res = await fetch(
-          `http://192.168.1.103:3001/baiviet?maLHP=${id}&loaiBV=1`
+          `http://192.168.1.105:3001/baiviet?maLHP=${id}&loaiBV=1`
         );
         const data = await res.json();
         console.log("📦 Dữ liệu bài tập:", data);

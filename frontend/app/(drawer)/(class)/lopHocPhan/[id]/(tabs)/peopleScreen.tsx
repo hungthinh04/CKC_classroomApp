@@ -14,13 +14,13 @@ export default function PeopleScreen() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`http://192.168.1.103:3001/sinhvien_lhp?maLHP=${id}`)
+    fetch(`http://192.168.1.105:3001/sinhvien_lhp?maLHP=${id}`)
       .then((res) => res.json())
       .then(async (list) => {
         const svs = await Promise.all(
           list.map(async (item: any) => {
             const res = await fetch(
-              `http://192.168.1.103:3001/sinhvien?maSV=${item.maSV}`
+              `http://192.168.1.105:3001/sinhvien?maSV=${item.maSV}`
             );
             const [sv] = await res.json();
             return sv;
