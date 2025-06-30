@@ -6,15 +6,15 @@ type BaiViet = {
   id: number;
   tieuDe: string;
   noiDung: string;
-  ngayKetThuc?: string;
+  ngayTao?: string | null;
+  ngayKetThuc?: string | null;
   loaiBV: number;
-  maLHP: number;
+  maBaiViet: string;
+  trangThai: number;
 };
 
 export default function BaiTapScreen() {
-  const { id, tenLHP } = useLopHocPhan();
-  console.log("🔥 Tab Notifications ID:", id);
-
+  const { id } = useLopHocPhan();
   const [tasks, setTasks] = useState<BaiViet[]>([]);
 
   useEffect(() => {
@@ -25,11 +25,8 @@ export default function BaiTapScreen() {
 
     const fetchTasks = async () => {
       try {
-        const res = await fetch(
-          `http://192.168.1.103:3001/baiviet?maLHP=${id}&loaiBV=1`
-        );
+        const res = await fetch(`http://192.168.1.104:3000/baiviet/loai?maLHP=${id}&loaiBV=1`);
         const data = await res.json();
-        console.log("📦 Dữ liệu bài tập:", data);
         setTasks(data);
       } catch (err) {
         console.error("❌ Lỗi khi gọi API:", err);
@@ -45,16 +42,17 @@ export default function BaiTapScreen() {
       keyExtractor={(item) => item?.id?.toString()}
       renderItem={({ item }) => (
         <View style={styles.card}>
-          <Text style={styles.title}>{item?.tieuDe || "Không có tiêu đề"}</Text>
-          <Text style={styles.date}>
-            Hạn:{" "}
-            {item?.ngayKetThuc ? item.ngayKetThuc.slice(0, 10) : "Không rõ"}
-          </Text>
+          <Text style={styles.title}>{item.tieuDe || "📝 Không có tiêu đề"}</Text>
+          <Text style={styles.meta}>Mã bài viết: {item.maBaiViet}</Text>
+          <Text style={styles.meta}>Ngày tạo: {item.ngayTao ? item.ngayTao.slice(0, 10) : "Chưa có"}</Text>
+          <Text style={styles.meta}>Hạn nộp: {item.ngayKetThuc ? item.ngayKetThuc.slice(0, 10) : "Không rõ"}</Text>
+          <Text style={styles.content}>{item.noiDung}</Text>
         </View>
       )}
     />
   );
 }
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#1e293b",
@@ -66,10 +64,15 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    marginBottom: 4,
   },
-  date: {
+  meta: {
     color: "#ccc",
-    marginTop: 4,
     fontSize: 13,
+  },
+  content: {
+    color: "#eee",
+    marginTop: 6,
+    fontSize: 14,
   },
 });

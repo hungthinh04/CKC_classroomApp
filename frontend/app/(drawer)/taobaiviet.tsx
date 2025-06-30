@@ -1,51 +1,77 @@
 import { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
-import { useLopHocPhan } from "@/context/_context";
-import { useAuth } from "@/stores/useAuth";
-import  DateTimePicker from '@react-native-community/datetimepicker';
-import { useLocalSearchParams } from "expo-router";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+} from "react-native";
+import * as DocumentPicker from "expo-document-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useLocalSearchParams, router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { green } from "react-native-reanimated/lib/typescript/Colors";
 
 export default function TaoBaiVietScreen() {
-  const { id: maLHP } = useLocalSearchParams();
-  const { user } = useAuth();
-const [showDatePicker, setShowDatePicker] = useState(false);
-  const [tieuDe, setTieuDe] = useState("");
+  const { maLHP } = useLocalSearchParams();
   const [noiDung, setNoiDung] = useState("");
-  const [loaiBV, setLoaiBV] = useState(1); // 1: bài tập, 0: bài viết
   const [hanNop, setHanNop] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [file, setFile] = useState<any>(null);
+
+  const handleFilePick = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: "*/*" });
+    if (result.type === "success") {
+      setFile(result);
+    }
+  };
 
   const handleSubmit = async () => {
-    if (!tieuDe || !noiDung) {
-      Alert.alert("Thiếu thông tin", "Hãy nhập đầy đủ tiêu đề và nội dung");
+    if (!noiDung) {
+      Alert.alert("Thiếu nội dung", "Hãy nhập nội dung thông báo");
       return;
     }
 
-    const data: any = {
-      maGV: user.id,
-      maLHP,
-      tieuDe,
-      noiDung,
-      loaiBV,
-      ngayTao: new Date().toISOString(),
+    const payload = {
+      TieuDe: "Thông báo lớp học",
+      NoiDung: noiDung,
+      LoaiBV: 0,
+      MaLHP: parseInt(maLHP as string),
+      MaCD: 1,
+      GioKetThuc: new Date().toISOString(),
+      NgayKetThuc: hanNop.toISOString(),
     };
 
-    if (loaiBV === 1) data.hanNop = hanNop.toISOString();
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const res = await fetch("http://192.168.1.104:3000/baiviet/tao", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    await fetch("http://192.168.1.103:3001/baiviet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-
-    Alert.alert("✅ Thành công", "Đã tạo bài viết!");
+      const result = await res.json();
+console.log("➡️ status", res.status);
+      if (res.ok) {
+        Alert.alert("✅ Thành công", "Bài viết đã được tạo", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      } else {
+        Alert.alert("❌ Thất bại", result.message || "Đã xảy ra lỗi");
+      }
+    } catch (err) {
+      console.error("Lỗi gửi bài:", err);
+      Alert.alert("❌ Lỗi", "Không thể kết nối đến máy chủ");
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Tiêu đề</Text>
-      <TextInput style={styles.input} value={tieuDe} onChangeText={setTieuDe} />
-
-      <Text style={styles.label}>Nội dung</Text>
+      <Text style={styles.label}>Thông báo gì đó cho lớp</Text>
       <TextInput
         style={[styles.input, { height: 100 }]}
         value={noiDung}
@@ -53,30 +79,8 @@ const [showDatePicker, setShowDatePicker] = useState(false);
         multiline
       />
 
-      <Text style={styles.label}>Loại bài</Text>
-      <View style={{ flexDirection: "row", marginBottom: 10 }}>
-        <Button title="📝 Bài viết" onPress={() => setLoaiBV(0)} />
-        <View style={{ width: 10 }} />
-        <Button title="📂 Bài tập" onPress={() => setLoaiBV(1)} />
-      </View>
-
-      <Button
-  title={`📅 Hạn nộp: ${hanNop.toLocaleDateString()}`}
-  onPress={() => setShowDatePicker(true)}
-/>
-
-{showDatePicker && (
-  <DateTimePicker
-    value={hanNop}
-    mode="date"
-    display="default"
-    onChange={(event, selectedDate) => {
-      if (selectedDate) setHanNop(selectedDate);
-      setShowDatePicker(false); // 👈 đóng picker sau khi chọn
-    }}
-  />
-)}
-
+      <Button title="📎 Chọn tệp đính kèm" onPress={handleFilePick} />
+      {file && <Text style={{ marginTop: 8, color: "green" }}>📄 {file.name}</Text>}
 
       <View style={{ marginTop: 20 }}>
         <Button title="📤 Đăng bài" onPress={handleSubmit} />

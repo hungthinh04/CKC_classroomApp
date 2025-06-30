@@ -1,8 +1,8 @@
 import { useLopHocPhan } from "@/context/_context";
 import { useAuth } from "@/stores/useAuth";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -41,37 +41,38 @@ type LopHocPhan = {
 
 export default function LopHocPhanDetail() {
   const { id, tenLHP } = useLopHocPhan();
-const [lop, setLop] = useState<LopHocPhan | null>(null);
-
+  const [lop, setLop] = useState<LopHocPhan | null>(null);
+  const { MaLHP } = useLocalSearchParams();
+  const maLHP = parseInt(MaLHP as string);
   const [baiViet, setBaiViet] = useState<BaiViet[]>([]);
   const { user } = useAuth();
-  useEffect(() => {
-    if (!id) return;
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`http://192.168.1.104:3000/lophocphan/${id}`);
+      const res1 = await fetch(`http://192.168.1.104:3000/baiviet/${id}`);
 
-    const fetchData = async () => {
-      try {
-        const res = await fetch(
-          `http://192.168.1.104:3000/lophocphan/${id}`
-        );
-        const res1 = await fetch(`http://192.168.1.104:3000/baiviet/${id}`);
+      const data = await res.json();
+      const data1 = await res1.json();
 
-        const data = await res.json();
-        const data1 = await res1.json();
-    
-        setLop(data);
-        setBaiViet(data1);
-      } catch (err) {
-        console.error("Lỗi khi lấy bài viết:", err);
-      }
-    };
-    fetchData();
-  }, [id]);
+      setLop(data);
+      setBaiViet(data1);
+    } catch (err) {
+      console.error("Lỗi khi lấy bài viết:", err);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id) fetchData();
+    }, [id])
+  );
 
   // if (!lop) return null;
   console.log(id, tenLHP, baiViet);
   return (
     <ScrollView style={styles.container}>
       {/* Header lớp */}
+
       <View style={styles.header}>
         <Image
           source={require("../../../../../../assets/images/icon.png")}
@@ -79,7 +80,9 @@ const [lop, setLop] = useState<LopHocPhan | null>(null);
         />
         <View style={styles.headerContent}>
           <Text style={styles.className}>{tenLHP}</Text>
-          <Text style={styles.classMeta}>GV: {baiViet[0]?.HoGV} {baiViet[0]?.TenGV}</Text>
+          <Text style={styles.classMeta}>
+            GV: {baiViet[0]?.HoGV} {baiViet[0]?.TenGV}
+          </Text>
           <Text style={styles.classMeta}>
             Ngày tạo:{" "}
             {lop?.NgayTao
@@ -90,7 +93,20 @@ const [lop, setLop] = useState<LopHocPhan | null>(null);
       </View>
 
       {/* Danh sách bài viết */}
-      <Text style={styles.sectionTitle}>Bảng tin lớp học</Text>
+      <TouchableOpacity
+        style={styles.newPostBtn}
+        onPress={() => router.push(`/taobaiviet?maLHP=${id}`)}
+      >
+        <Text style={{ color: "white", fontWeight: "bold" }}>
+          <Ionicons
+            name="pencil"
+            size={13}
+            style={{ width: 20 }}
+            color="white"
+          />{" "}
+          Thông báo mới
+        </Text>
+      </TouchableOpacity>
       {baiViet.length === 0 ? (
         <Text style={{ textAlign: "center", color: "#666" }}>
           Chưa có bài viết nào.
@@ -120,15 +136,6 @@ const [lop, setLop] = useState<LopHocPhan | null>(null);
             <Text style={styles.postContent}>{bv.NoiDung}</Text>
           </TouchableOpacity>
         ))
-      )}
-
-      {user?.quyen === 0 && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push("/taobaiviet")}
-        >
-          <Ionicons name="add" size={28} color="white" />
-        </TouchableOpacity>
       )}
     </ScrollView>
   );
@@ -186,6 +193,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 10,
   },
+
+  newPostBtn: {
+    backgroundColor: "#6a63ee",
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: "center",
+    marginTop: 16,
+  },
+
   postAuthor: {
     fontWeight: "bold",
   },

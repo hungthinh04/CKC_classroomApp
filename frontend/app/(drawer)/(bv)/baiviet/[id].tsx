@@ -18,7 +18,7 @@ export default function BaiVietDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://192.168.1.103:3001/baiviet/${id}`)
+    fetch(`http://192.168.1.104:3000/baiviet/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setBaiViet(data);

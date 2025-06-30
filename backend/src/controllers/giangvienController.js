@@ -127,3 +127,21 @@ exports.getAllGiangVien = async (req, res) => {
     res.status(500).json({ message: 'Lỗi khi lấy danh sách giảng viên' });
   }
 };
+
+exports.getGiangVienByLHP = async (req, res) => {
+  const { maLHP } = req.query;
+  try {
+    const result = await pool.request()
+      .input('MaLHP', sql.Int, maLHP)
+      .query(`
+        SELECT sv.MaSinhVien, sv.HoTen, sv.MaSV
+        FROM SINHVIEN_LHP slhp
+        JOIN SINHVIEN sv ON slhp.MaSV = sv.ID
+        WHERE slhp.MaLHP = @MaLHP
+      `);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi khi lấy sinh viên' });
+  }
+};
