@@ -143,3 +143,19 @@ exports.getBaiVietTheoLoai = async (req, res) => {
 //     res.status(500).json({ message: "Lỗi tạo bài viết" });
 //   }
 // };
+
+
+exports.deleteBaiViet = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.request()
+      .input("ID", sql.Int, parseInt(id))
+      .query("DELETE FROM BAIVIET WHERE ID = @ID");
+
+    res.json({ message: "Xóa bài viết thành công" });
+  } catch (err) {
+    console.error("❌ Lỗi khi xóa bài viết:", err);
+    res.status(500).json({ message: "Lỗi server khi xóa bài viết" });
+  }
+};

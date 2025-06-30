@@ -14,4 +14,7 @@ router.get("/:id", controller.getBaiVietByLHP);
 
 
 router.post("/tao", auth, checkGiangVien, controller.createBaiViet);
+
+router.delete("/:id", auth, checkGiangVien, controller.deleteBaiViet);
+
 module.exports = router;

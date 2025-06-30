@@ -107,35 +107,37 @@ export default function LopHocPhanDetail() {
           Thông báo mới
         </Text>
       </TouchableOpacity>
-      {baiViet.length === 0 ? (
+      {baiViet.filter((bv) => bv.LoaiBV === 0).length === 0 ? (
         <Text style={{ textAlign: "center", color: "#666" }}>
           Chưa có bài viết nào.
         </Text>
       ) : (
-        baiViet.map((bv) => (
-          <TouchableOpacity
-            key={bv.ID}
-            style={styles.postCard}
-            onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
-          >
-            <View style={styles.postHeader}>
-              <View style={styles.avatar}>
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                  {user?.email?.charAt(0).toUpperCase()}
-                </Text>
+        baiViet
+          .filter((bv) => bv.LoaiBV === 0) // 👈 Chỉ lấy bài viết LoaiBV === 0
+          .map((bv) => (
+            <TouchableOpacity
+              key={bv.ID}
+              style={styles.postCard}
+              onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
+            >
+              <View style={styles.postHeader}>
+                <View style={styles.avatar}>
+                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                    {user?.email?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.postDate}>
+                    {bv.NgayTao
+                      ? new Date(bv.NgayTao).toLocaleDateString("vi-VN")
+                      : "Không rõ"}
+                  </Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.postDate}>
-                  {bv.NgayTao
-                    ? new Date(bv.NgayTao).toLocaleDateString("vi-VN")
-                    : "Không rõ"}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.postTitle}>{bv.TieuDe}</Text>
-            <Text style={styles.postContent}>{bv.NoiDung}</Text>
-          </TouchableOpacity>
-        ))
+              <Text style={styles.postTitle}>{bv.TieuDe}</Text>
+              <Text style={styles.postContent}>{bv.NoiDung}</Text>
+            </TouchableOpacity>
+          ))
       )}
     </ScrollView>
   );
