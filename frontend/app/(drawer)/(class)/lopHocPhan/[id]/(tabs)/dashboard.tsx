@@ -1,9 +1,11 @@
 import { useLopHocPhan } from "@/context/_context";
 import { useAuth } from "@/stores/useAuth";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -60,6 +62,47 @@ export default function LopHocPhanDetail() {
       console.error("Lỗi khi lấy bài viết:", err);
     }
   };
+
+  
+  const handleDelete = (id: number) => {
+  Alert.alert(
+    "Xác nhận xóa",
+    "Bạn có chắc chắn muốn xóa bài viết này?",
+    [
+      {
+        text: "Hủy",
+        style: "cancel",
+      },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem("token");
+
+            const res = await fetch(`http://192.168.1.104:3000/baiviet/${id}`, {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            const result = await res.json();
+            if (res.ok) {
+              alert("✅ Đã xóa bài viết");
+              fetchData(); // làm mới lại danh sách
+            } else {
+              alert("❌ Xóa thất bại: " + result.message);
+            }
+          } catch (err) {
+            console.error("❌ Lỗi khi xóa:", err);
+            alert("Lỗi kết nối");
+          }
+        },
+      },
+    ]
+  );
+};
 
   useFocusEffect(
     useCallback(() => {
@@ -136,6 +179,12 @@ export default function LopHocPhanDetail() {
               </View>
               <Text style={styles.postTitle}>{bv.TieuDe}</Text>
               <Text style={styles.postContent}>{bv.NoiDung}</Text>
+                <TouchableOpacity
+              style={{ marginTop: 8 }}
+              onPress={() => handleDelete(bv.ID)}
+            >
+              <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
+            </TouchableOpacity>
             </TouchableOpacity>
           ))
       )}

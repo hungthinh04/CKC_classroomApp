@@ -4,6 +4,7 @@ import { Button } from "@react-navigation/elements";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -38,29 +39,45 @@ export default function BaiTapScreen() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
+  const handleDelete = (id: number) => {
+  Alert.alert(
+    "Xác nhận xóa",
+    "Bạn có chắc chắn muốn xóa bài viết này?",
+    [
+      {
+        text: "Hủy",
+        style: "cancel",
+      },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem("token");
 
-      const res = await fetch(`http://192.168.1.104:3000/baiviet/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
+            const res = await fetch(`http://192.168.1.104:3000/baiviet/${id}`, {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            const result = await res.json();
+            if (res.ok) {
+              alert("✅ Đã xóa bài viết");
+              fetchTasks(); // làm mới lại danh sách
+            } else {
+              alert("❌ Xóa thất bại: " + result.message);
+            }
+          } catch (err) {
+            console.error("❌ Lỗi khi xóa:", err);
+            alert("Lỗi kết nối");
+          }
         },
-      });
-
-      const result = await res.json();
-      if (res.ok) {
-        alert("✅ Đã xóa bài viết");
-        fetchTasks(); // Refresh lại danh sách
-      } else {
-        alert("❌ Xóa thất bại: " + result.message);
-      }
-    } catch (err) {
-      console.error("❌ Lỗi khi xóa:", err);
-      alert("Lỗi kết nối");
-    }
-  };
+      },
+    ]
+  );
+};
 
   useFocusEffect(
     useCallback(() => {
