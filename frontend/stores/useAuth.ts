@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type User = {
   id: number;
   email: string;
+  role: number; // 0: Giảng viên, 1: Sinh viên
   matKhau: string;
   quyen: number; // 0: GV, 1: SV
   maNguoiDung: string; // 0: GV, 1: SV
@@ -25,6 +26,7 @@ type AuthStore = {
   
   isLoggedIn: boolean;
   user: User | null;
+
   login: (userData: User) => Promise<void>;
   logout: () => Promise<void>;
   checkLogin: () => Promise<void>;
