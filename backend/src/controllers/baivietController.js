@@ -32,7 +32,8 @@ exports.createBaiViet = async (req, res) => {
     NgayKetThuc,
     GioKetThuc,
   } = req.body;
-
+console.log("✅ req.body:", req.body);
+    console.log("✅ req.file:", req.file); // nếu có   file
   try {
     await pool.request()
       .input("TieuDe", sql.NVarChar, TieuDe)
@@ -157,5 +158,59 @@ exports.deleteBaiViet = async (req, res) => {
   } catch (err) {
     console.error("❌ Lỗi khi xóa bài viết:", err);
     res.status(500).json({ message: "Lỗi server khi xóa bài viết" });
+  }
+};
+
+
+
+exports.nopBai = async (req, res) => {
+  const { maSV, maBaiViet, lienKet, vanBan } = req.body;
+
+  if (!maSV || !maBaiViet) {
+    return res.status(400).json({ message: "Thiếu thông tin sinh viên hoặc bài viết" });
+  }
+
+  try {
+    await pool.request()
+      .input("MaSV", sql.Int, maSV)
+      .input("MaBaiViet", sql.Int, maBaiViet)
+      .input("LienKet", sql.NVarChar, lienKet || "")
+      .input("VanBan", sql.NVarChar, vanBan || "")
+      .query(`
+        INSERT INTO SINHVIEN_NOPBAI (MaSV, MaFile, LienKet, VanBan, MaBaiViet)
+        VALUES (@MaSV, NULL, @LienKet, @VanBan, @MaBaiViet)
+      `);
+
+    res.json({ message: "Nộp bài thành công" });
+  } catch (err) {
+    console.error("❌ Lỗi nộp bài:", err);
+    res.status(500).json({ message: "Lỗi khi nộp bài" });
+  }
+};
+
+
+exports.getBaiVietById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.request()
+      .input("ID", sql.Int, id)
+      .query(`
+        SELECT 
+          bv.ID, bv.TieuDe, bv.NoiDung, bv.NgayTao, bv.NgayKetThuc,
+          bv.LoaiBV, bv.MaBaiViet, bv.TrangThai, gv.HoGV, gv.TenGV
+        FROM BAIVIET bv
+        JOIN LOPHOCPHAN lhp ON bv.MaLHP = lhp.ID
+        JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID
+        WHERE bv.ID = @ID
+      `);
+    
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy bài viết" });
+    }
+
+    res.json(result.recordset[0]);
+  } catch (err) {
+    console.error("❌ Lỗi khi lấy chi tiết bài viết:", err);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };

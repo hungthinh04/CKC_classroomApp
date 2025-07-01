@@ -1,11 +1,27 @@
 import { useLopHocPhan } from "@/context/_context";
 import { useAuth } from "@/stores/useAuth";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { Alert, Button, FlatList, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  Alert,
+  Button,
+  FlatList,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+} from "react-native";
 
-type User = { maSV: number; tenSV: string };
-type GiangVien = { maGV: number; tenGV: string };
+type User = {
+  maSV: number;
+  tenSV: string;
+  avatar?: string;
+};
+
+type GiangVien = {
+  maGV: number;
+  tenGV: string;
+};
 
 export default function PeopleScreen() {
   const { id } = useLopHocPhan();
@@ -14,9 +30,7 @@ export default function PeopleScreen() {
   const [gv, setGv] = useState<GiangVien | null>(null);
 
   const isGV = user?.role === 1;
-  console.log(isGV);
-  console.log(user);
-  console.log(users);
+
   const fetchData = async () => {
     try {
       const res = await fetch(
@@ -32,7 +46,7 @@ export default function PeopleScreen() {
 
   useFocusEffect(
     useCallback(() => {
-    fetchData();
+      fetchData();
     }, [id])
   );
 
@@ -69,8 +83,42 @@ export default function PeopleScreen() {
     );
   };
 
+  const handleRemoveSinhVien = (maSV: number) => {
+    Alert.alert("Xác nhận", "Bạn có chắc muốn xóa sinh viên khỏi lớp?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const res = await fetch(
+              `http://192.168.1.104:3000/lophocphan/${id}/remove-sinhvien`,
+              {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ maSV }),
+              }
+            );
+            const result = await res.json();
+            if (res.ok) {
+              Alert.alert("✅", "Đã xoá sinh viên");
+              fetchData();
+            } else {
+              Alert.alert("❌", result.message || "Lỗi xảy ra");
+            }
+          } catch (err) {
+            Alert.alert("❌", "Không thể kết nối máy chủ");
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <View style={{ padding: 16 }}>
+      {/* Hiển thị giảng viên */}
       {gv && (
         <View
           style={{
@@ -87,6 +135,7 @@ export default function PeopleScreen() {
         </View>
       )}
 
+      {/* Nút thêm người */}
       {isGV && (
         <View style={{ gap: 12, marginBottom: 12 }}>
           <Button
@@ -100,6 +149,7 @@ export default function PeopleScreen() {
         </View>
       )}
 
+      {/* Danh sách sinh viên */}
       {users.length === 0 ? (
         <Text style={{ color: "#888" }}>
           Không có sinh viên nào trong lớp học phần này.
@@ -111,16 +161,41 @@ export default function PeopleScreen() {
           renderItem={({ item }) => (
             <View
               style={{
+                flexDirection: "row",
+                alignItems: "center",
                 padding: 10,
                 backgroundColor: "#2a2a2a",
                 marginBottom: 8,
                 borderRadius: 6,
               }}
             >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                {item.tenSV}
-              </Text>
-              <Text style={{ color: "#aaa" }}>Mã SV: {item.maSV}</Text>
+              <Image
+                source={{
+                  uri:
+                    item.avatar || "https://i.pravatar.cc/300?u=" + item.maSV,
+                }}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  marginRight: 12,
+                  backgroundColor: "#444",
+                }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                  {item.tenSV}
+                </Text>
+                <Text style={{ color: "#aaa" }}>Mã SV: {item.maSV}</Text>
+              </View>
+              {isGV && (
+                <Button
+                  title="❌ Xoá"
+                  color="red"
+                  onPress={() => handleRemoveSinhVien(item.maSV)}
+                />
+              )}
+              <View style={{ flex: 1 }} />
             </View>
           )}
         />
