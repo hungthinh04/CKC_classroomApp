@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import {
   View,
   Text,
@@ -10,7 +11,7 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-
+import * as FileSystem from "expo-file-system";
 import { useLocalSearchParams, router } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -46,16 +47,30 @@ function BaseForm({
 
   const chonTep = async () => {
     const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
-    if (res.type === "success") setTep(res);
+    if (!res.canceled && res.assets && res.assets.length > 0) {
+      const asset = res.assets[0];
+      let fileUri = asset.uri;
+
+      // Nếu là content:// → copy sang file://
+      if (!fileUri.startsWith("file://")) {
+        const fileName = asset.name || `tep-${Date.now()}`;
+        const newPath = FileSystem.documentDirectory + fileName;
+
+        await FileSystem.copyAsync({
+          from: asset.uri,
+          to: newPath,
+        });
+
+        fileUri = newPath;
+      }
+
+      setTep({ ...asset, uri: fileUri });
+    }
   };
 
   const handleSubmit = async () => {
-    if (!tieuDe || !noiDung) {
-      Alert.alert("⚠️ Thiếu thông tin", "Vui lòng nhập tiêu đề và nội dung");
-      return;
-    }
-
     const formData = new FormData();
+
     formData.append("TieuDe", tieuDe);
     formData.append("NoiDung", noiDung);
     formData.append("MaLHP", maLHP || "");
@@ -68,28 +83,46 @@ function BaseForm({
       formData.append("file", {
         uri: tep.uri,
         name: tep.name,
-        type: "*/*",
+        type: tep.mimeType || "application/octet-stream",
       } as any);
     }
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const res = await fetch("http://192.168.1.104:3000/baiviet/tao", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-        body: formData,
-      });
+      console.log("📡 Gửi tới:", "http://192.168.1.104:3000/baiviet/tao");
+      console.log("📎 file:", tep);
+      console.log("📤 form:", formData);
+      console.log("📎 File uri:", tep.uri);
+      console.log("📤 FormData:", formData);
+      // React Native FormData does not support .entries(), so log fields manually
+      console.log("🧾 TieuDe :", tieuDe);
+      console.log("🧾 NoiDung :", noiDung);
+      console.log("🧾 MaLHP :", maLHP || "");
+      console.log("🧾 LoaiBV :", loaiBV.toString());
+      console.log("🧾 MaCD :", "1");
+      console.log("🧾 GioKetThuc :", new Date().toISOString());
+      console.log("🧾 NgayKetThuc :", hanNop.toISOString());
+      if (tep) {
+        console.log("🧾 file :", tep);
+      }
 
-      const result = await res.json();
-      if (res.ok) {
-        Alert.alert("✅ Thành công", `${submitLabel} thành công`, [
+      const res = await axios.post(
+        "http://192.168.1.104:3000/baiviet/tao",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (res.status === 201) {
+        Alert.alert("✅ Thành công", `${submitLabel} và upload tệp "${tep.name}`, [
           { text: "OK", onPress: () => router.back() },
         ]);
       } else {
-        Alert.alert("❌ Thất bại", result.message || "Có lỗi xảy ra");
+        Alert.alert("❌ Thất bại", res.data.message || "Có lỗi xảy ra");
       }
     } catch (err) {
       console.error("❌ Lỗi gửi bài:", err);
@@ -119,26 +152,28 @@ function BaseForm({
       />
 
       <Text style={styles.label}>Hạn nộp</Text>
-      <TouchableOpacity onPress={() => setShowDatePicker(true)} style={{ marginTop: 16 }}>
-  <Text style={{ color: "blue" }}>
-    {hanNop
-      ? `📅 Thời gian đến hạn: ${hanNop.toLocaleString("vi-VN")}`
-      : "📅 Đặt thời gian đến hạn"}
-  </Text>
-</TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => setShowDatePicker(true)}
+        style={{ marginTop: 16 }}
+      >
+        <Text style={{ color: "blue" }}>
+          {hanNop
+            ? `📅 Thời gian đến hạn: ${hanNop.toLocaleString("vi-VN")}`
+            : "📅 Đặt thời gian đến hạn"}
+        </Text>
+      </TouchableOpacity>
 
-<DateTimePickerModal
-  isVisible={showDatePicker}
-  mode="datetime"
-  date={hanNop || new Date()}
-  is24Hour={true}
-  onConfirm={(date) => {
-    setShowDatePicker(false);
-    setHanNop(date);
-  }}
-  onCancel={() => setShowDatePicker(false)}
-/>
-
+      <DateTimePickerModal
+        isVisible={showDatePicker}
+        mode="datetime"
+        date={hanNop || new Date()}
+        is24Hour={true}
+        onConfirm={(date) => {
+          setShowDatePicker(false);
+          setHanNop(date);
+        }}
+        onCancel={() => setShowDatePicker(false)}
+      />
 
       <TouchableOpacity onPress={chonTep} style={{ marginTop: 12 }}>
         <Text style={{ color: "blue" }}>
