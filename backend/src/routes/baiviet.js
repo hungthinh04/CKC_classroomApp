@@ -8,13 +8,20 @@ const controller = require("../controllers/baivietController");
 const checkGiangVien = require("../middleware/checkGiangVien");
 const upload = require("../utils/multer"); // ✅ import đúng middleware
 
-// router.get('/lophophan/:id/baiviet',auth,controller.getBaiVietByLHP);
 router.post("/tao", auth, checkGiangVien, upload.single("file"), (req, res, next) => {
   console.log("🔍 Kiểm tra req.headers['content-type']:", req.headers['content-type']);
   console.log("✅ Multer file:", req.file);
   console.log("✅ Multer body:", req.body);
+
+  // Kiểm tra xem file đã được upload thành công chưa
+  if (!req.file) {
+    return res.status(400).json({ message: "Không có tệp nào được upload." });
+  }
+
+  // Tiếp tục với controller createBaiViet
   next();
-}, controller.createBaiViet);
+}, createBaiViet);
+
 
 router.get("/loai", controller.getBaiVietTheoLoai);
 

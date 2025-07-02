@@ -46,27 +46,33 @@ function BaseForm({
   const [tep, setTep] = useState<any>(null);
 
   const chonTep = async () => {
-    const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
-    if (!res.canceled && res.assets && res.assets.length > 0) {
-      const asset = res.assets[0];
-      let fileUri = asset.uri;
+  const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
 
-      // Nếu là content:// → copy sang file://
-      if (!fileUri.startsWith("file://")) {
-        const fileName = asset.name || `tep-${Date.now()}`;
-        const newPath = FileSystem.documentDirectory + fileName;
+  if (!res.canceled && res.assets && res.assets.length > 0) {
+    const asset = res.assets[0];
+    const originalUri = asset.uri;
+    const fileName = asset.name || `tep-${Date.now()}`;
+    const newPath = FileSystem.documentDirectory + encodeURIComponent(fileName); // tránh lỗi tên
 
-        await FileSystem.copyAsync({
-          from: asset.uri,
-          to: newPath,
-        });
+    try {
+      // Copy file từ content:// hoặc uri lạ sang file://
+      await FileSystem.copyAsync({
+        from: originalUri,
+        to: newPath,
+      });
 
-        fileUri = newPath;
-      }
-
-      setTep({ ...asset, uri: fileUri });
+      setTep({
+        ...asset,
+        uri: newPath, // ✅ uri chuẩn, luôn file://
+        name: fileName,
+      });
+    } catch (err) {
+      console.error("❌ Lỗi khi copy file:", err);
+      Alert.alert("Lỗi", "Không thể xử lý tệp đính kèm");
     }
-  };
+  }
+};
+
 
   const handleSubmit = async () => {
     const formData = new FormData();
@@ -118,9 +124,23 @@ function BaseForm({
       );
 
       if (res.status === 201) {
-        Alert.alert("✅ Thành công", `${submitLabel} và upload tệp "${tep.name}`, [
-          { text: "OK", onPress: () => router.back() },
-        ]);
+        const fileUrl = res.data.fileUrl
+          ? `http://192.168.1.104:3000${res.data.fileUrl}`
+          : null;
+
+        Alert.alert(
+          "✅ Thành công",
+          `${submitLabel} thành công${fileUrl ? `\nFile: ${fileUrl}` : ""}`,
+          [
+            {
+              text: "Xem bài viết",
+              onPress: () => {
+                // tuỳ bạn, hoặc chuyển trang
+                router.back();
+              },
+            },
+          ]
+        );
       } else {
         Alert.alert("❌ Thất bại", res.data.message || "Có lỗi xảy ra");
       }
