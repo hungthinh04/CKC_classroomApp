@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Button } from "react-native";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Button, Linking } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 export default function ChiTietBaiTapScreen() {
@@ -59,6 +59,15 @@ console.log("📦 Dữ liệu bài tập:", bv);
         👨‍🏫 GV: {bv.HoGV} {bv.TenGV}
       </Text>
       <Text style={styles.content}>{bv.NoiDung}</Text>
+      {bv.DuongDanFile && (
+  <TouchableOpacity
+    style={{ marginTop: 10 }}
+    onPress={() => Linking.openURL(`http://192.168.1.104:3000${bv.DuongDanFile}`)}
+  >
+    <Text style={{ color: "blue" }}>📎 Mở file đính kèm</Text>
+  </TouchableOpacity>
+)}
+
       {bv.LoaiBV === 1 && (
   <View>
     <TouchableOpacity onPress={chonTep}>

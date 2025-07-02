@@ -2,17 +2,10 @@ import { useLopHocPhan } from "@/context/_context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, router } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Modal,
-  Pressable,
-} from "react-native";
+import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View, Modal, Pressable, Linking, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { WebView } from "react-native-webview";  // Để hiển thị PDF
+import PDFReader from 'react-native-pdf';  // Nếu muốn sử dụng thư viện PDF chuyên biệt
 
 type BaiViet = {
   id: number;
@@ -23,6 +16,7 @@ type BaiViet = {
   loaiBV: number;
   maBaiViet: string;
   trangThai: number;
+  duongDanFile?: string | null;
 };
 
 export default function BaiTapScreen() {
@@ -32,9 +26,7 @@ export default function BaiTapScreen() {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch(
-        `http://192.168.1.104:3000/baiviet/loai?maLHP=${id}&loaiBV=1`
-      );
+      const res = await fetch(`http://192.168.1.104:3000/baiviet/loai?maLHP=${id}&loaiBV=1`);
       const data = await res.json();
       setTasks(data);
     } catch (err) {
@@ -90,31 +82,65 @@ export default function BaiTapScreen() {
       <FlatList
         data={tasks}
         keyExtractor={(item) => item?.id?.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => router.push(`/baitap/${item.id}`)}
-            style={styles.card}
-          >
-            <Text style={styles.title}>
-              {item.tieuDe || "📝 Không có tiêu đề"}
-            </Text>
-            <Text style={styles.meta}>Mã bài viết: {item.maBaiViet}</Text>
-            <Text style={styles.meta}>
-              Ngày tạo: {item.ngayTao?.slice(0, 10) || "Chưa có"}
-            </Text>
-            <Text style={styles.meta}>
-              Hạn nộp: {item.ngayKetThuc?.slice(0, 10) || "Không rõ"}
-            </Text>
-            <Text style={styles.content}>{item.noiDung}</Text>
+        renderItem={({ item }) => {
+          // Tạo URL cho file
+          const fileUrl = item.duongDanFile ? `http://192.168.1.104:3000${item.duongDanFile}` : null;
 
+          // Kiểm tra loại file
+          const isImage = fileUrl?.match(/\.(jpg|jpeg|png)$/i);
+          const isPDF = fileUrl?.match(/\.pdf$/i);
+          const isDOCX = fileUrl?.match(/\.docx$/i);
+
+          return (
             <TouchableOpacity
-              style={{ marginTop: 8 }}
-              onPress={() => handleDelete(item.id)}
+              onPress={() => router.push(`/baitap/${item.id}`)}
+              style={styles.card}
             >
-              <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
+              <Text style={styles.title}>
+                {item.tieuDe || "📝 Không có tiêu đề"}
+              </Text>
+              <Text style={styles.meta}>Mã bài viết: {item.maBaiViet}</Text>
+              <Text style={styles.meta}>
+                Ngày tạo: {item.ngayTao?.slice(0, 10) || "Chưa có"}
+              </Text>
+              <Text style={styles.meta}>
+                Hạn nộp: {item.ngayKetThuc?.slice(0, 10) || "Không rõ"}
+              </Text>
+              <Text style={styles.content}>{item.noiDung}</Text>
+
+              {/* Nếu là ảnh, hiển thị trực tiếp */}
+              {isImage ? (
+                <Image
+                  source={{ uri: fileUrl }}
+                  style={{ width: "100%", height: 200, marginTop: 12, borderRadius: 6 }}
+                  resizeMode="contain"
+                />
+              ) : isPDF && fileUrl ? (
+                             <TouchableOpacity onPress={() => Linking.openURL(fileUrl)}>
+                  <Text style={{ color: 'skyblue', marginTop: 6 }}>📎 Xem PDF</Text>
+                </TouchableOpacity>
+              ) : isDOCX ? (
+                <TouchableOpacity onPress={() => Linking.openURL(fileUrl)}>
+                  <Text style={{ color: 'skyblue', marginTop: 6 }}>📎 Xem DOCX</Text>
+                </TouchableOpacity>
+              ) : (
+                // Nếu là file khác, hiển thị liên kết để mở
+                fileUrl && (
+                  <TouchableOpacity onPress={() => fileUrl && Linking.openURL(fileUrl)}>
+                    <Text style={{ color: 'skyblue', marginTop: 6 }}>📎 Xem file đính kèm</Text>
+                  </TouchableOpacity>
+                )
+              )}
+
+              <TouchableOpacity
+                style={{ marginTop: 8 }}
+                onPress={() => handleDelete(item.id)}
+              >
+                <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
-          </TouchableOpacity>
-        )}
+          );
+        }}
       />
 
       {/* ➕ Floating Add Button */}
@@ -151,7 +177,9 @@ export default function BaiTapScreen() {
             ))}
 
             <TouchableOpacity onPress={() => setShowModal(false)}>
-              <Text style={{ color: "red", marginTop: 12, textAlign: "center" }}>
+              <Text
+                style={{ color: "red", marginTop: 12, textAlign: "center" }}
+              >
                 Hủy
               </Text>
             </TouchableOpacity>
