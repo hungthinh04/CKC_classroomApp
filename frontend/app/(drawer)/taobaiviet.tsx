@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Button,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, router } from "expo-router";
@@ -80,7 +73,9 @@ export default function TaoBaiVietScreen() {
       />
 
       <Button title="📎 Chọn tệp đính kèm" onPress={handleFilePick} />
-      {file && <Text style={{ marginTop: 8, color: "green" }}>📄 {file.name}</Text>}
+      {file && (
+        <Text style={{ marginTop: 8, color: "green" }}>📄 {file.name}</Text>
+      )}
 
       <View style={{ marginTop: 20 }}>
         <Button title="📤 Đăng bài" onPress={handleSubmit} />

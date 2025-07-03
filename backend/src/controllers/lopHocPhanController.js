@@ -159,3 +159,22 @@ exports.addGiangVien = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi thêm giảng viên" });
   }
 };
+
+exports.removeSinhVien = async (req, res) => {
+  const { maLHP } = req.params;
+  const { maSV } = req.body;
+
+  if (!maSV) return res.status(400).json({ message: "Thiếu mã sinh viên" });
+
+  try {
+    await pool.request()
+      .input("MaLHP", sql.Int, maLHP)
+      .input("MaSV", sql.Int, maSV)
+      .query("DELETE FROM SINHVIEN_LHP WHERE MaLHP = @MaLHP AND MaSV = @MaSV");
+
+    res.json({ message: "Đã xóa sinh viên khỏi lớp học phần" });
+  } catch (err) {
+    console.error("❌ Lỗi xóa sinh viên:", err);
+    res.status(500).json({ message: "Lỗi khi xóa sinh viên" });
+  }
+};
