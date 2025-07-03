@@ -138,7 +138,7 @@ export default function LopHocPhanDetail() {
       {/* Danh sách bài viết */}
       <TouchableOpacity
         style={styles.newPostBtn}
-        onPress={() => router.push(`/taobaiviet?maLHP=${id}`)}
+        onPress={() => router.push(`/tao/taobaiviet?maLHP=${id}`)}
       >
         <Text style={{ color: "white", fontWeight: "bold" }}>
           <Ionicons

@@ -1,8 +1,16 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  Button, Linking, Alert, TextInput, Image
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Button,
+  Linking,
+  Alert,
+  TextInput,
+  Image,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -29,9 +37,10 @@ export default function ChiTietBaiTapScreen() {
     const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
     if (!res.canceled && res.assets && res.assets.length > 0) {
       const asset = res.assets[0];
-      const originalUri = asset.uri;  
+      const originalUri = asset.uri;
       const fileName = asset.name || `tep-${Date.now()}`;
-      const newPath = FileSystem.documentDirectory + encodeURIComponent(fileName); // tránh lỗi tên
+      const newPath =
+        FileSystem.documentDirectory + encodeURIComponent(fileName); // tránh lỗi tên
 
       try {
         // Copy file từ content:// hoặc uri lạ sang file://
@@ -67,7 +76,7 @@ export default function ChiTietBaiTapScreen() {
       formData.append("file", {
         uri: tep.uri,
         name: tep.name,
-        type: "*/*",
+        type: tep.mimeType || "application/octet-stream",
       } as any);
     }
 
@@ -78,24 +87,40 @@ export default function ChiTietBaiTapScreen() {
     try {
       const token = await AsyncStorage.getItem("token");
 
-      const res = await fetch("http://192.168.1.104:3000/baiviet/nopbai", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-        body: formData,
-      });
+      const res = await axios.post(
+        "http://192.168.1.104:3000/baiviet/nopbai",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
-      const result = await res.json();
-      if (res.ok) {
-        Alert.alert("✅ Nộp bài thành công");
-        setTep(null);
-        setNhanXet("");
+      if (res.status === 201) {
+        const fileUrl = res.data.fileUrl
+          ? `http://192.168.1.104:3000${res.data.fileUrl}`
+          : null;
+        Alert.alert("✅ Nộp bài thành công", "", [
+          {
+            text: "Ok",
+            onPress: () => {
+              // Tuỳ bạn, hoặc chuyển trang
+             router.back();
+            },
+          },
+        ]);
+        // setTep(null);
+        // setNhanXet("");
       } else {
-        Alert.alert("❌", result.message);
+        Alert.alert("❌", res.data.message);
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error("❌ Lỗi gửi bài:", err?.message || err);
+      if (err.response?.data) {
+        console.error("🧨 Lỗi từ backend:", err.response.data);
+      }
       Alert.alert("Lỗi", "Không thể kết nối máy chủ");
     } finally {
       setLoading(false);
@@ -124,7 +149,7 @@ export default function ChiTietBaiTapScreen() {
       const token = await AsyncStorage.getItem("token");
 
       const res = await axios.post(
-        "http://192.168.1.104:3000/baiviet/tao",
+        "http://192.168.1.104:3000/baiviet/nopbai",
         formData,
         {
           headers: {
@@ -147,7 +172,11 @@ export default function ChiTietBaiTapScreen() {
               text: "Xem bài viết",
               onPress: () => {
                 // Tuỳ bạn, hoặc chuyển trang
-                router.back();
+                router.replace({
+  pathname: "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
+  params: { id: bv.MaLHP?.toString() },
+});
+
               },
             },
           ]
@@ -163,7 +192,9 @@ export default function ChiTietBaiTapScreen() {
 
   if (!bv) return null;
 
-  const fileUrl = bv.DuongDanFile ? `http://192.168.1.104:3000${bv.DuongDanFile}` : null;
+  const fileUrl = bv.DuongDanFile
+    ? `http://192.168.1.104:3000${bv.DuongDanFile}`
+    : null;
 
   return (
     <ScrollView style={styles.container}>
@@ -177,13 +208,20 @@ export default function ChiTietBaiTapScreen() {
       <View style={styles.metaBox}>
         <Text style={styles.meta}>🧾 Mã: {bv.MaBaiViet}</Text>
         <Text style={styles.meta}>🗓 Ngày tạo: {bv.NgayTao?.slice(0, 10)}</Text>
-        <Text style={styles.meta}>⏰ Hạn nộp: {bv.NgayKetThuc?.slice(0, 10)}</Text>
-        <Text style={styles.meta}>👨‍🏫 GV: {bv.HoGV} {bv.TenGV}</Text>
+        <Text style={styles.meta}>
+          ⏰ Hạn nộp: {bv.NgayKetThuc?.slice(0, 10)}
+        </Text>
+        <Text style={styles.meta}>
+          👨‍🏫 GV: {bv.HoGV} {bv.TenGV}
+        </Text>
       </View>
 
       {/* File đính kèm */}
       {fileUrl && (
-        <TouchableOpacity style={styles.attachment} onPress={() => Linking.openURL(fileUrl)}>
+        <TouchableOpacity
+          style={styles.attachment}
+          onPress={() => Linking.openURL(fileUrl)}
+        >
           <Text style={styles.attachmentText}>📎 Xem file đính kèm</Text>
         </TouchableOpacity>
       )}
@@ -201,9 +239,11 @@ export default function ChiTietBaiTapScreen() {
           </TouchableOpacity>
 
           {/* Nếu là file ảnh, hiển thị ảnh */}
-          {tep && tep.uri && (tep.mimeType?.includes("image") ? (
-            <Image source={{ uri: tep.uri }} style={styles.imagePreview} />
-          ) : null)}
+          {tep &&
+            tep.uri &&
+            (tep.mimeType?.includes("image") ? (
+              <Image source={{ uri: tep.uri }} style={styles.imagePreview} />
+            ) : null)}
 
           {/* Nhận xét cho bài tập */}
           <TextInput
@@ -230,9 +270,19 @@ export default function ChiTietBaiTapScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#f9fafb", flex: 1 },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 12, color: "#1e293b" },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#1e293b",
+  },
   content: { fontSize: 16, color: "#374151", marginBottom: 12, lineHeight: 22 },
-  metaBox: { marginBottom: 16, backgroundColor: "#e5e7eb", padding: 12, borderRadius: 8 },
+  metaBox: {
+    marginBottom: 16,
+    backgroundColor: "#e5e7eb",
+    padding: 12,
+    borderRadius: 8,
+  },
   meta: { fontSize: 13, color: "#374151", marginBottom: 4 },
   attachment: {
     paddingVertical: 12,
@@ -243,8 +293,19 @@ const styles = StyleSheet.create({
   },
   attachmentText: { color: "#0284c7", fontWeight: "bold" },
   submitBox: { borderTopWidth: 1, borderColor: "#ccc", paddingTop: 16 },
-  sectionLabel: { fontSize: 16, fontWeight: "600", marginBottom: 12, color: "#1e293b" },
-  imagePreview: { width: "100%", height: 200, marginTop: 12, borderRadius: 6, resizeMode: "contain" },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 12,
+    color: "#1e293b",
+  },
+  imagePreview: {
+    width: "100%",
+    height: 200,
+    marginTop: 12,
+    borderRadius: 6,
+    resizeMode: "contain",
+  },
   textInput: {
     borderWidth: 1,
     borderColor: "#ccc",

@@ -74,7 +74,7 @@ export default function BaiTapScreen() {
 
   const handleCreate = (loaiBV: number) => {
     setShowModal(false);
-    router.push(`/taobaitap?maLHP=${id}&loaiBV=${loaiBV}`);
+    router.push(`/tao/taobaitap?maLHP=${id}&loaiBV=${loaiBV}`);
   };
 
   return (
