@@ -41,7 +41,7 @@ exports.getGiangVienVaSinhVien = async (req, res) => {
     gv.ID AS maGV, gv.HoGV + ' ' + gv.TenGV AS tenGV,
     sv.ID AS maSV, sv.HoTen AS tenSV
   FROM LOPHOCPHAN lhp
-  JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID
+  JOIN GIANGVIENN gv ON lhp.MaGV = gv.ID
   JOIN SINHVIEN_LHP slhp ON lhp.ID = slhp.MaLHP
   JOIN SINHVIEN sv ON sv.ID = slhp.MaSV
   WHERE lhp.ID = @MaLHP

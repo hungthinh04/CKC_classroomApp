@@ -34,7 +34,7 @@ export default function TaoBaiTapScreen() {
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const res = await fetch("http://192.168.1.104:3000/baiviet/tao", {
+      const res = await fetch("http://192.168.1.101:3000/baiviet/tao", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

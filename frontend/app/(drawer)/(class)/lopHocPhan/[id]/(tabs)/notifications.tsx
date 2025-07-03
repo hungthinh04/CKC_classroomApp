@@ -30,7 +30,7 @@ export default function BaiTapScreen() {
   const fetchTasks = async () => {
     try {
       const res = await fetch(
-        `http://192.168.1.104:3000/baiviet/loai?maLHP=${id}&loaiBV=1`
+        `http://192.168.1.101:3000/baiviet/loai?maLHP=${id}&loaiBV=1`
       );
       const data = await res.json();
       setTasks(data);
@@ -40,44 +40,44 @@ export default function BaiTapScreen() {
   };
 
   const handleDelete = (id: number) => {
-  Alert.alert(
-    "Xác nhận xóa",
-    "Bạn có chắc chắn muốn xóa bài viết này?",
-    [
-      {
-        text: "Hủy",
-        style: "cancel",
-      },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const token = await AsyncStorage.getItem("token");
-
-            const res = await fetch(`http://192.168.1.104:3000/baiviet/${id}`, {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-
-            const result = await res.json();
-            if (res.ok) {
-              alert("✅ Đã xóa bài viết");
-              fetchTasks(); // làm mới lại danh sách
-            } else {
-              alert("❌ Xóa thất bại: " + result.message);
-            }
-          } catch (err) {
-            console.error("❌ Lỗi khi xóa:", err);
-            alert("Lỗi kết nối");
-          }
+    Alert.alert(
+      "Xác nhận xóa",
+      "Bạn có chắc chắn muốn xóa bài viết này?",
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
         },
-      },
-    ]
-  );
-};
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("token");
+
+              const res = await fetch(`http://192.168.1.101:3000/baiviet/${id}`, {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              const result = await res.json();
+              if (res.ok) {
+                alert("✅ Đã xóa bài viết");
+                fetchTasks(); // làm mới lại danh sách
+              } else {
+                alert("❌ Xóa thất bại: " + result.message);
+              }
+            } catch (err) {
+              console.error("❌ Lỗi khi xóa:", err);
+              alert("Lỗi kết nối");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   useFocusEffect(
     useCallback(() => {

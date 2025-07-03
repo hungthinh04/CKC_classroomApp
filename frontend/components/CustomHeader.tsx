@@ -14,7 +14,7 @@ export default function CustomHeader() {
   const { tenLHP } = useLopHocPhan();
   useEffect(() => {
     if (!id) return;
-    fetch(`http://192.168.1.103:3001/lophophan/${id}`)
+    fetch(`http://192.168.1.101:3001/lophophan/${id}`)
       .then((res) => res.json())
       .then((data) => setTitle(data.tenLHP));
   }, [id]);

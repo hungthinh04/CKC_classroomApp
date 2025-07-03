@@ -6,7 +6,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
-  Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -48,10 +48,11 @@ export default function LopHocPhanDetail() {
   const maLHP = parseInt(MaLHP as string);
   const [baiViet, setBaiViet] = useState<BaiViet[]>([]);
   const { user } = useAuth();
+
   const fetchData = async () => {
     try {
-      const res = await fetch(`http://192.168.1.104:3000/lophocphan/${id}`);
-      const res1 = await fetch(`http://192.168.1.104:3000/baiviet/${id}`);
+      const res = await fetch(`http://192.168.1.101:3000/lophocphan/${id}`);
+      const res1 = await fetch(`http://192.168.1.101:3000/baiviet/${id}`);
 
       const data = await res.json();
       const data1 = await res1.json();
@@ -63,12 +64,8 @@ export default function LopHocPhanDetail() {
     }
   };
 
-  
   const handleDelete = (id: number) => {
-  Alert.alert(
-    "Xác nhận xóa",
-    "Bạn có chắc chắn muốn xóa bài viết này?",
-    [
+    Alert.alert("Xác nhận xóa", "Bạn có chắc chắn muốn xóa bài viết này?", [
       {
         text: "Hủy",
         style: "cancel",
@@ -80,7 +77,7 @@ export default function LopHocPhanDetail() {
           try {
             const token = await AsyncStorage.getItem("token");
 
-            const res = await fetch(`http://192.168.1.104:3000/baiviet/${id}`, {
+            const res = await fetch(`http://192.168.1.101:3000/baiviet/${id}`, {
               method: "DELETE",
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -90,7 +87,7 @@ export default function LopHocPhanDetail() {
             const result = await res.json();
             if (res.ok) {
               alert("✅ Đã xóa bài viết");
-              fetchData(); // làm mới lại danh sách
+              fetchData();
             } else {
               alert("❌ Xóa thất bại: " + result.message);
             }
@@ -100,9 +97,8 @@ export default function LopHocPhanDetail() {
           }
         },
       },
-    ]
-  );
-};
+    ]);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -110,29 +106,28 @@ export default function LopHocPhanDetail() {
     }, [id])
   );
 
-  // if (!lop) return null;
-  console.log(id, tenLHP, baiViet);
   return (
     <ScrollView style={styles.container}>
       {/* Header lớp */}
-
       <View style={styles.header}>
-        <Image
+        <ImageBackground
           source={require("../../../../../../assets/images/icon.png")}
           style={styles.coverImg}
-        />
-        <View style={styles.headerContent}>
-          <Text style={styles.className}>{tenLHP}</Text>
-          <Text style={styles.classMeta}>
-            GV: {baiViet[0]?.HoGV} {baiViet[0]?.TenGV}
-          </Text>
-          <Text style={styles.classMeta}>
-            Ngày tạo:{" "}
-            {lop?.NgayTao
-              ? new Date(lop.NgayTao).toLocaleDateString("vi-VN")
-              : "Không rõ"}
-          </Text>
-        </View>
+          imageStyle={{ borderTopLeftRadius: 10, borderTopRightRadius: 10 }}
+        >
+          <View style={styles.headerContent}>
+            <Text style={styles.className}>{tenLHP}</Text>
+            <Text style={styles.classMeta}>
+              GV: {baiViet[0]?.HoGV} {baiViet[0]?.TenGV}
+            </Text>
+            <Text style={styles.classMeta}>
+              Ngày tạo:{" "}
+              {lop?.NgayTao
+                ? new Date(lop.NgayTao).toLocaleDateString("vi-VN")
+                : "Không rõ"}
+            </Text>
+          </View>
+        </ImageBackground>
       </View>
 
       {/* Danh sách bài viết */}
@@ -140,23 +135,18 @@ export default function LopHocPhanDetail() {
         style={styles.newPostBtn}
         onPress={() => router.push(`/taobaiviet?maLHP=${id}`)}
       >
-        <Text style={{ color: "white", fontWeight: "bold" }}>
-          <Ionicons
-            name="pencil"
-            size={13}
-            style={{ width: 20 }}
-            color="white"
-          />{" "}
+        <Text style={{ color: "black", fontWeight: "bold" }}>
           Thông báo mới
         </Text>
       </TouchableOpacity>
+
       {baiViet.filter((bv) => bv.LoaiBV === 0).length === 0 ? (
         <Text style={{ textAlign: "center", color: "#666" }}>
           Chưa có bài viết nào.
         </Text>
       ) : (
         baiViet
-          .filter((bv) => bv.LoaiBV === 0) // 👈 Chỉ lấy bài viết LoaiBV === 0
+          .filter((bv) => bv.LoaiBV === 0)
           .map((bv) => (
             <TouchableOpacity
               key={bv.ID}
@@ -179,12 +169,12 @@ export default function LopHocPhanDetail() {
               </View>
               <Text style={styles.postTitle}>{bv.TieuDe}</Text>
               <Text style={styles.postContent}>{bv.NoiDung}</Text>
-                <TouchableOpacity
-              style={{ marginTop: 8 }}
-              onPress={() => handleDelete(bv.ID)}
-            >
-              <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={{ marginTop: 8 }}
+                onPress={() => handleDelete(bv.ID)}
+              >
+                <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
           ))
       )}
@@ -199,36 +189,41 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   header: {
-    backgroundColor: "#e0e7ff",
     borderRadius: 10,
     overflow: "hidden",
     marginBottom: 16,
   },
   coverImg: {
-    height: 100,
     width: "100%",
-    resizeMode: "cover",
   },
   headerContent: {
     padding: 12,
+    backgroundColor: "rgba(0,0,0,0.4)", // optional overlay for contrast
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    height: 125,
+    gap: 5,
   },
   className: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "#fff",
   },
   classMeta: {
-    color: "#555",
+    color: "#eee",
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10,
+  newPostBtn: {
+    backgroundColor: "#BBDEFB",
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: "center",
   },
   postCard: {
     backgroundColor: "#f3f4f6",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
+    marginTop: 12,
   },
   postHeader: {
     flexDirection: "row",
@@ -244,18 +239,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 10,
   },
-
-  newPostBtn: {
-    backgroundColor: "#6a63ee",
-    paddingVertical: 12,
-    borderRadius: 16,
-    alignItems: "center",
-    marginTop: 16,
-  },
-
-  postAuthor: {
-    fontWeight: "bold",
-  },
   postDate: {
     fontSize: 12,
     color: "#666",
@@ -269,17 +252,5 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     color: "#333",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-    backgroundColor: "#4f46e5",
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
   },
 });

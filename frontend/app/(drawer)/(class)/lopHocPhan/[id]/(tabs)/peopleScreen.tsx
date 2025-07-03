@@ -20,7 +20,7 @@ export default function PeopleScreen() {
   const fetchData = async () => {
     try {
       const res = await fetch(
-        `http://192.168.1.104:3000/lophocphan/thanhphan?maLHP=${id}`
+        `http://192.168.1.101:3000/lophocphan/thanhphan?maLHP=${id}`
       );
       const data = await res.json();
       setUsers(data.sinhViens || []);
@@ -32,7 +32,7 @@ export default function PeopleScreen() {
 
   useFocusEffect(
     useCallback(() => {
-    fetchData();
+      fetchData();
     }, [id])
   );
 
@@ -45,7 +45,7 @@ export default function PeopleScreen() {
 
         try {
           const res = await fetch(
-            `http://192.168.1.104:3000/lophocphan/${id}/add-${type}`,
+            `http://192.168.1.101:3000/lophocphan/${id}/add-${type}`,
             {
               method: "POST",
               headers: {

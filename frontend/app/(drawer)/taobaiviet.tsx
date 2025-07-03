@@ -45,7 +45,7 @@ export default function TaoBaiVietScreen() {
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const res = await fetch("http://192.168.1.104:3000/baiviet/tao", {
+      const res = await fetch("http://192.168.1.101:3000/baiviet/tao", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -55,7 +55,7 @@ export default function TaoBaiVietScreen() {
       });
 
       const result = await res.json();
-console.log("➡️ status", res.status);
+      console.log("➡️ status", res.status);
       if (res.ok) {
         Alert.alert("✅ Thành công", "Bài viết đã được tạo", [
           { text: "OK", onPress: () => router.back() },
