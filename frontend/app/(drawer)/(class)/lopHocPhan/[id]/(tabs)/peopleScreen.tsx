@@ -140,11 +140,11 @@ export default function PeopleScreen() {
         <View style={{ gap: 12, marginBottom: 12 }}>
           <Button
             title="📨 Mời giảng viên"
-            onPress={() => router.push(`/addgiangvien?maLHP=${id}`)}
+            onPress={() => router.push(`/nguoidung/addgiangvien?maLHP=${id}`)}
           />
           <Button
             title="📨 Mời sinh viên"
-            onPress={() => router.push(`/addsinhvien?maLHP=${id}`)}
+            onPress={() => router.push(`/nguoidung/addsinhvien?maLHP=${id}`)}
           />
         </View>
       )}

@@ -6,9 +6,18 @@ import {
   StyleSheet,
   ActivityIndicator,
   Button,
+  Linking,
+  Alert,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
 } from "react-native";
 import { useAuth } from "@/stores/useAuth";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function BaiVietDetail() {
   const { id } = useLocalSearchParams();
@@ -16,9 +25,14 @@ export default function BaiVietDetail() {
   const navigation = useNavigation();
   const [baiViet, setBaiViet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+
+  const isImage = (url: string) =>
+    url.match(/\.(jpeg|jpg|png|gif|webp)$/i);
 
   useEffect(() => {
-    fetch(`http://192.168.1.104:3000/baiviet/${id}`)
+    fetch(`http://192.168.1.104:3000/baiviet/id/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setBaiViet(data);
@@ -29,6 +43,46 @@ export default function BaiVietDetail() {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    if (baiViet?.id) {
+      fetch(`http://192.168.1.104:3000/baiviet/${baiViet.id}/comments`)
+        .then((res) => res.json())
+        .then(setComments)
+        .catch((err) => console.error("❌ Lỗi lấy comments:", err));
+    }
+  }, [baiViet?.id]);
+
+  const submitComment = async () => {
+    if (!newComment.trim()) return;
+
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const res = await fetch(
+        `http://192.168.1.104:3000/baiviet/${baiViet.id}/comment`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ noiDung: newComment }),
+        }
+      );
+
+      if (res.ok) {
+        setNewComment("");
+        const fresh = await fetch(
+          `http://192.168.1.104:3000/baiviet/${baiViet.id}/comments`
+        );
+        setComments(await fresh.json());
+      } else {
+        Alert.alert("❌ Lỗi", "Không thể gửi nhận xét");
+      }
+    } catch (err) {
+      console.error("❌ Gửi nhận xét lỗi:", err);
+    }
+  };
 
   if (loading) {
     return (
@@ -47,24 +101,71 @@ export default function BaiVietDetail() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <Text style={styles.title}>{baiViet.tieuDe}</Text>
       <Text style={styles.meta}>
-        Người đăng: GV#{baiViet.maGV} –{" "}
-        {baiViet.loaiBV === 1 ? "Bài tập" : "Bài viết"}
+        Người đăng: {baiViet.hoGV} {baiViet.tenGV}
       </Text>
-      {baiViet.hanNop && (
-        <Text style={styles.deadline}>🕒 Hạn nộp: {baiViet.hanNop}</Text>
-      )}
+
       <Text style={styles.content}>{baiViet.noiDung}</Text>
 
-      {user?.quyen === 1 && baiViet.loaiBV === 1 && (
-        <Button
-          title="📤 Nộp bài"
-          onPress={() => navigation.navigate("nopbai", { id: baiViet.id })}
+      {baiViet.fileUrl &&
+        (isImage(baiViet.fileUrl) ? (
+          <Image
+            source={{ uri: baiViet.fileUrl }}
+            style={{
+              width: "100%",
+              height: 200,
+              marginTop: 12,
+              borderRadius: 8,
+            }}
+            resizeMode="contain"
+          />
+        ) : (
+          <Text
+            style={styles.fileLink}
+            onPress={() => Linking.openURL(baiViet.fileUrl)}
+          >
+            📎 Tải tệp đính kèm
+          </Text>
+        ))}
+
+      <Text style={styles.commentTitle}>💬 Nhận xét</Text>
+      <FlatList
+        data={comments}
+        keyExtractor={(item) => item.ID.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.commentItem}>
+            <Text style={styles.commentUser}>
+              {item.MaNguoiDung || "Người dùng"}:
+            </Text>
+            <Text style={styles.commentText}>{item.NoiDung}</Text>
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text style={{ color: "#aaa", fontStyle: "italic" }}>
+            Chưa có nhận xét
+          </Text>
+        }
+        style={{ marginBottom: 8 }}
+      />
+
+      <View style={styles.commentBox}>
+        <TextInput
+          value={newComment}
+          onChangeText={setNewComment}
+          placeholder="Nhập nhận xét..."
+          placeholderTextColor="#888"
+          style={styles.commentInput}
         />
-      )}
-    </View>
+        <TouchableOpacity onPress={submitComment}>
+          <Text style={styles.sendBtn}>📩</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -78,6 +179,38 @@ const styles = StyleSheet.create({
   },
   title: { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 8 },
   meta: { color: "#aaa", fontStyle: "italic", marginBottom: 4 },
-  deadline: { color: "#f87171", fontWeight: "600", marginBottom: 8 },
   content: { color: "#ddd", fontSize: 16, marginTop: 10 },
+  fileLink: {
+    color: "#4ADE80",
+    marginTop: 12,
+    textDecorationLine: "underline",
+  },
+  commentTitle: {
+    color: "#fff",
+    fontWeight: "bold",
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  commentItem: { marginBottom: 6 },
+  commentUser: { color: "#60a5fa", fontWeight: "600" },
+  commentText: { color: "#ddd", marginLeft: 4 },
+  commentBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#333",
+    paddingTop: 8,
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: "#222",
+    color: "#fff",
+    padding: 8,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  sendBtn: {
+    fontSize: 20,
+    color: "#4ade80",
+  },
 });

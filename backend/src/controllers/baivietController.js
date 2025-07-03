@@ -169,15 +169,20 @@ exports.nopBai = async (req, res) => {
 
     // 🔐 Kiểm tra quyền sinh viên
     if (req.user.role !== 0) {
-      return res.status(403).json({ message: "Chỉ sinh viên được phép nộp bài" });
+      return res
+        .status(403)
+        .json({ message: "Chỉ sinh viên được phép nộp bài" });
     }
 
     if (!MaBV || (!req.file && !VanBan)) {
-      return res.status(400).json({ message: "Vui lòng chọn tệp hoặc nhập nhận xét" });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng chọn tệp hoặc nhập nhận xét" });
     }
 
     // 🔍 Lấy MaSV từ MaTK
-    const svResult = await pool.request()
+    const svResult = await pool
+      .request()
       .input("MaTK", sql.Int, MaTK)
       .query(`SELECT TOP 1 ID FROM SINHVIEN WHERE MaTK = @MaTK`);
 
@@ -197,61 +202,74 @@ exports.nopBai = async (req, res) => {
       const extension = originalname.split(".").pop();
       const dungLuongMB = (size / (1024 * 1024)).toFixed(2);
 
-      const fileResult = await pool.request()
+      const fileResult = await pool
+        .request()
         .input("TenFile", sql.NVarChar, originalname)
         .input("DuongDan", sql.NVarChar, filePath)
         .input("DungLuong", sql.Float, dungLuongMB)
         .input("LoaiFile", sql.NVarChar, extension)
         .input("MaBaiViet", sql.Int, MaBV)
-        .input("TrangThai", sql.SmallInt, 1)
-        .query(`
-          INSERT INTO [FILE] (
-            TenFile, DuongDan, DungLuong, LoaiFile, MaBaiViet, TrangThai, NgayTao
-          )
-          OUTPUT inserted.ID
-          VALUES (
-            @TenFile, @DuongDan, @DungLuong, @LoaiFile, @MaBaiViet, @TrangThai, GETDATE()
-          )
-        `);
+        .input("TrangThai", sql.SmallInt, 1).query(`
+  DECLARE @InsertedIds TABLE (ID INT);
+  INSERT INTO [FILE] (
+    TenFile, DuongDan, DungLuong, LoaiFile, MaBaiViet, TrangThai, NgayTao
+  )
+  OUTPUT inserted.ID INTO @InsertedIds
+  VALUES (@TenFile, @DuongDan, @DungLuong, @LoaiFile, @MaBaiViet, @TrangThai, GETDATE());
+
+  SELECT ID FROM @InsertedIds;
+`);
 
       MaFile = fileResult.recordset[0].ID;
       LienKet = `http://192.168.1.104:3000${filePath}`;
     }
 
     // 💾 Lưu bài nộp
-    await pool.request()
+    await pool
+      .request()
       .input("MaSV", sql.Int, MaSV)
       .input("MaFile", sql.Int, MaFile)
       .input("LienKet", sql.NVarChar, LienKet)
       .input("VanBan", sql.NVarChar, VanBan)
-      .input("MaBaiViet", sql.Int, MaBV)
-      .query(`
+      .input("MaBaiViet", sql.Int, MaBV).query(`
         INSERT INTO SINHVIEN_NOPBAI (MaSV, MaFile, LienKet, VanBan, MaBaiViet)
         VALUES (@MaSV, @MaFile, @LienKet, @VanBan, @MaBaiViet)
       `);
+    console.log("📤 Trả response thành công:", {
+      fileUrl: LienKet,
+    });
 
     return res.status(201).json({
       message: "✅ Nộp bài thành công",
       fileUrl: LienKet,
     });
   } catch (err) {
-    console.error("❌ Lỗi khi nộp bài:", err);
+    console.error("❌ Lỗi khi nộp bài:", err.message, err.stack);
+
     res.status(500).json({ message: "Lỗi khi nộp bài" });
   }
 };
-
-
-
 exports.getBaiVietById = async (req, res) => {
   const { id } = req.params;
+
   try {
-    const result = await pool.request().input("ID", sql.Int, id).query(`
+    const result = await pool.request()
+      .input("ID", sql.Int, id)
+      .query(`
         SELECT 
-          bv.ID, bv.TieuDe, bv.NoiDung, bv.NgayTao, bv.NgayKetThuc,
-          bv.LoaiBV, bv.MaBaiViet, bv.TrangThai, gv.HoGV, gv.TenGV,bv.DuongDanFile
+          bv.ID,
+          bv.TieuDe AS tieuDe,
+          bv.NoiDung AS noiDung,
+          bv.LoaiBV AS loaiBV,
+          bv.NgayTao AS ngayTao,
+          bv.NgayKetThuc AS hanNop,
+          bv.DuongDanFile AS fileUrl,
+          gv.ID AS maGV,
+          gv.TenGV AS tenGV,
+          gv.HoGV AS hoGV
         FROM BAIVIET bv
         JOIN LOPHOCPHAN lhp ON bv.MaLHP = lhp.ID
-        JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID
+        JOIN GIANGVIENN gv ON lhp.MaGV = gv.ID
         WHERE bv.ID = @ID
       `);
 
@@ -259,7 +277,14 @@ exports.getBaiVietById = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy bài viết" });
     }
 
-    res.json(result.recordset[0]);
+    const data = result.recordset[0];
+
+    res.json({
+      ...data,
+      fileUrl: data.fileUrl
+        ? `http://192.168.1.104:3000${data.fileUrl}`
+        : null,
+    });
   } catch (err) {
     console.error("❌ Lỗi khi lấy chi tiết bài viết:", err);
     res.status(500).json({ message: "Lỗi server" });
