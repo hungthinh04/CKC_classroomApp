@@ -159,31 +159,88 @@ exports.deleteBaiViet = async (req, res) => {
 };
 
 exports.nopBai = async (req, res) => {
-  const { maSV, maBaiViet, lienKet, vanBan } = req.body;
-
-  if (!maSV || !maBaiViet) {
-    return res
-      .status(400)
-      .json({ message: "Thiếu thông tin sinh viên hoặc bài viết" });
-  }
-
   try {
-    await pool
-      .request()
-      .input("MaSV", sql.Int, maSV)
-      .input("MaBaiViet", sql.Int, maBaiViet)
-      .input("LienKet", sql.NVarChar, lienKet || "")
-      .input("VanBan", sql.NVarChar, vanBan || "").query(`
+    console.log("📥 Nhận dữ liệu nộp bài:", req.body);
+    console.log("📁 File nhận được:", req.file);
+
+    const MaBV = req.body.MaBV;
+    const VanBan = req.body.VanBan || null;
+    const MaTK = req.user.id;
+
+    // 🔐 Kiểm tra quyền sinh viên
+    if (req.user.role !== 0) {
+      return res.status(403).json({ message: "Chỉ sinh viên được phép nộp bài" });
+    }
+
+    if (!MaBV || (!req.file && !VanBan)) {
+      return res.status(400).json({ message: "Vui lòng chọn tệp hoặc nhập nhận xét" });
+    }
+
+    // 🔍 Lấy MaSV từ MaTK
+    const svResult = await pool.request()
+      .input("MaTK", sql.Int, MaTK)
+      .query(`SELECT TOP 1 ID FROM SINHVIEN WHERE MaTK = @MaTK`);
+
+    if (svResult.recordset.length === 0) {
+      return res.status(403).json({ message: "Không tìm thấy sinh viên" });
+    }
+
+    const MaSV = svResult.recordset[0].ID;
+
+    // 📎 Nếu có file, lưu vào bảng FILE
+    let MaFile = null;
+    let LienKet = null;
+
+    if (req.file) {
+      const { filename, originalname, size } = req.file;
+      const filePath = `/uploads/${filename}`;
+      const extension = originalname.split(".").pop();
+      const dungLuongMB = (size / (1024 * 1024)).toFixed(2);
+
+      const fileResult = await pool.request()
+        .input("TenFile", sql.NVarChar, originalname)
+        .input("DuongDan", sql.NVarChar, filePath)
+        .input("DungLuong", sql.Float, dungLuongMB)
+        .input("LoaiFile", sql.NVarChar, extension)
+        .input("MaBaiViet", sql.Int, MaBV)
+        .input("TrangThai", sql.SmallInt, 1)
+        .query(`
+          INSERT INTO [FILE] (
+            TenFile, DuongDan, DungLuong, LoaiFile, MaBaiViet, TrangThai, NgayTao
+          )
+          OUTPUT inserted.ID
+          VALUES (
+            @TenFile, @DuongDan, @DungLuong, @LoaiFile, @MaBaiViet, @TrangThai, GETDATE()
+          )
+        `);
+
+      MaFile = fileResult.recordset[0].ID;
+      LienKet = `http://192.168.1.104:3000${filePath}`;
+    }
+
+    // 💾 Lưu bài nộp
+    await pool.request()
+      .input("MaSV", sql.Int, MaSV)
+      .input("MaFile", sql.Int, MaFile)
+      .input("LienKet", sql.NVarChar, LienKet)
+      .input("VanBan", sql.NVarChar, VanBan)
+      .input("MaBaiViet", sql.Int, MaBV)
+      .query(`
         INSERT INTO SINHVIEN_NOPBAI (MaSV, MaFile, LienKet, VanBan, MaBaiViet)
-        VALUES (@MaSV, NULL, @LienKet, @VanBan, @MaBaiViet)
+        VALUES (@MaSV, @MaFile, @LienKet, @VanBan, @MaBaiViet)
       `);
 
-    res.json({ message: "Nộp bài thành công" });
+    return res.status(201).json({
+      message: "✅ Nộp bài thành công",
+      fileUrl: LienKet,
+    });
   } catch (err) {
-    console.error("❌ Lỗi nộp bài:", err);
+    console.error("❌ Lỗi khi nộp bài:", err);
     res.status(500).json({ message: "Lỗi khi nộp bài" });
   }
 };
+
+
 
 exports.getBaiVietById = async (req, res) => {
   const { id } = req.params;
@@ -191,7 +248,7 @@ exports.getBaiVietById = async (req, res) => {
     const result = await pool.request().input("ID", sql.Int, id).query(`
         SELECT 
           bv.ID, bv.TieuDe, bv.NoiDung, bv.NgayTao, bv.NgayKetThuc,
-          bv.LoaiBV, bv.MaBaiViet, bv.TrangThai, gv.HoGV, gv.TenGV
+          bv.LoaiBV, bv.MaBaiViet, bv.TrangThai, gv.HoGV, gv.TenGV,bv.DuongDanFile
         FROM BAIVIET bv
         JOIN LOPHOCPHAN lhp ON bv.MaLHP = lhp.ID
         JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID

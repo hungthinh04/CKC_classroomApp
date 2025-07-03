@@ -50,7 +50,7 @@ function BaseForm({
 
   if (!res.canceled && res.assets && res.assets.length > 0) {
     const asset = res.assets[0];
-    const originalUri = asset.uri;
+    const originalUri = asset.uri;  
     const fileName = asset.name || `tep-${Date.now()}`;
     const newPath = FileSystem.documentDirectory + encodeURIComponent(fileName); // tránh lỗi tên
 
@@ -100,7 +100,6 @@ function BaseForm({
       console.log("📤 form:", formData);
       console.log("📎 File uri:", tep.uri);
       console.log("📤 FormData:", formData);
-      // React Native FormData does not support .entries(), so log fields manually
       console.log("🧾 TieuDe :", tieuDe);
       console.log("🧾 NoiDung :", noiDung);
       console.log("🧾 MaLHP :", maLHP || "");
