@@ -15,7 +15,7 @@ export default function MoiGiangVienScreen() {
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const res = await fetch(`http://192.168.1.104:3000/lophocphan/${maLHP}/add-giangvien`, {
+      const res = await fetch(`http://192.168.1.101:3000/lophocphan/${maLHP}/add-giangvien`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

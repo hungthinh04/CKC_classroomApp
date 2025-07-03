@@ -1,16 +1,18 @@
 import { useLopHocPhan } from "@/context/_context";
 import { useAuth } from "@/stores/useAuth";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
-  Button,
   FlatList,
   Text,
   View,
   Image,
   TouchableOpacity,
+  Modal,
+  TextInput,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 type User = {
   maSV: number;
@@ -21,6 +23,7 @@ type User = {
 type GiangVien = {
   maGV: number;
   tenGV: string;
+  avatar?: string;
 };
 
 export default function PeopleScreen() {
@@ -28,13 +31,16 @@ export default function PeopleScreen() {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [gv, setGv] = useState<GiangVien | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [addType, setAddType] = useState<"sinhvien" | "giangvien" | null>(null);
+  const [inputEmail, setInputEmail] = useState("");
 
   const isGV = user?.role === 1;
 
   const fetchData = async () => {
     try {
       const res = await fetch(
-        `http://192.168.1.104:3000/lophocphan/thanhphan?maLHP=${id}`
+        `http://192.168.1.101:3000/lophocphan/thanhphan?maLHP=${id}`
       );
       const data = await res.json();
       setUsers(data.sinhViens || []);
@@ -50,37 +56,34 @@ export default function PeopleScreen() {
     }, [id])
   );
 
-  const handleAdd = (type: "sinhvien" | "giangvien") => {
-    Alert.prompt(
-      `Thêm ${type === "sinhvien" ? "sinh viên" : "giảng viên"}`,
-      "Nhập email người dùng:",
-      async (email) => {
-        if (!email) return;
+  const openAddModal = (type: "sinhvien" | "giangvien") => {
+    setAddType(type);
+    setInputEmail("");
+    setShowModal(true);
+  };
 
-        try {
-          const res = await fetch(
-            `http://192.168.1.104:3000/lophocphan/${id}/add-${type}`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ email }),
-            }
-          );
-
-          const result = await res.json();
-          if (res.ok) {
-            Alert.alert("✅ Thành công", result.message);
-            fetchData();
-          } else {
-            Alert.alert("❌ Thất bại", result.message || "Có lỗi xảy ra");
-          }
-        } catch (err) {
-          Alert.alert("❌ Lỗi kết nối", "Không thể kết nối máy chủ");
+  const handleAddUser = async () => {
+    if (!inputEmail || !addType) return;
+    try {
+      const res = await fetch(
+        `http://192.168.1.101:3000/lophocphan/${id}/add-${addType}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: inputEmail }),
         }
+      );
+      const result = await res.json();
+      if (res.ok) {
+        Alert.alert("✅ Thành công", result.message);
+        setShowModal(false);
+        fetchData();
+      } else {
+        Alert.alert("❌ Thất bại", result.message || "Có lỗi xảy ra");
       }
-    );
+    } catch (err) {
+      Alert.alert("❌ Lỗi kết nối", "Không thể kết nối máy chủ");
+    }
   };
 
   const handleRemoveSinhVien = (maSV: number) => {
@@ -92,7 +95,7 @@ export default function PeopleScreen() {
         onPress: async () => {
           try {
             const res = await fetch(
-              `http://192.168.1.104:3000/lophocphan/${id}/remove-sinhvien`,
+              `http://192.168.1.101:3000/lophocphan/${id}/remove-sinhvien`,
               {
                 method: "DELETE",
                 headers: {
@@ -117,89 +120,159 @@ export default function PeopleScreen() {
   };
 
   return (
-    <View style={{ padding: 16 }}>
-      {/* Hiển thị giảng viên */}
-      {gv && (
+    <View style={{ flex: 1, backgroundColor: "#fff", paddingTop: 8 }}>
+      {/* Giảng viên */}
+      <View style={{ paddingHorizontal: 16 }}>
         <View
           style={{
-            marginBottom: 20,
-            backgroundColor: "#1f2937",
-            padding: 12,
-            borderRadius: 8,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            👨‍🏫 Giảng viên: {gv.tenGV}
-          </Text>
-          <Text style={{ color: "#ccc" }}>Mã GV: {gv.maGV}</Text>
+          <Text style={{ fontWeight: "bold", fontSize: 16 }}>Giáo viên</Text>
+          {isGV && (
+            <TouchableOpacity onPress={() => openAddModal("giangvien")}>
+              <Ionicons name="person-add-outline" size={20} color="#333" />
+            </TouchableOpacity>
+          )}
         </View>
-      )}
 
-      {/* Nút thêm người */}
-      {isGV && (
-        <View style={{ gap: 12, marginBottom: 12 }}>
-          <Button
-            title="📨 Mời giảng viên"
-            onPress={() => router.push(`/addgiangvien?maLHP=${id}`)}
-          />
-          <Button
-            title="📨 Mời sinh viên"
-            onPress={() => router.push(`/addsinhvien?maLHP=${id}`)}
-          />
-        </View>
-      )}
-
-      {/* Danh sách sinh viên */}
-      {users.length === 0 ? (
-        <Text style={{ color: "#888" }}>
-          Không có sinh viên nào trong lớp học phần này.
-        </Text>
-      ) : (
-        <FlatList
-          data={users}
-          keyExtractor={(item) => item.maSV.toString()}
-          renderItem={({ item }) => (
-            <View
+        {gv && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 10,
+              borderBottomColor: "#eee",
+              borderBottomWidth: 1,
+            }}
+          >
+            <Image
+              source={{
+                uri: gv.avatar || "https://i.pravatar.cc/300?u=" + gv.maGV,
+              }}
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                padding: 10,
-                backgroundColor: "#2a2a2a",
-                marginBottom: 8,
-                borderRadius: 6,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                marginRight: 12,
+              }}
+            />
+            <Text>{gv.tenGV}</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Học viên */}
+      <View style={{ marginTop: 16, paddingHorizontal: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontWeight: "bold", fontSize: 16 }}>Học viên</Text>
+          {isGV && (
+            <TouchableOpacity onPress={() => openAddModal("sinhvien")}>
+              <Ionicons name="person-add-outline" size={20} color="#333" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      <FlatList
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8 }}
+        data={users}
+        keyExtractor={(item) => item.maSV.toString()}
+        renderItem={({ item }) => (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 10,
+              borderBottomColor: "#eee",
+              borderBottomWidth: 1,
+            }}
+          >
+            <Image
+              source={{
+                uri: item.avatar || "https://i.pravatar.cc/300?u=" + item.maSV,
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                marginRight: 12,
+              }}
+            />
+            <Text style={{ flex: 1 }}>{item.tenSV}</Text>
+            {isGV && (
+              <TouchableOpacity onPress={() => handleRemoveSinhVien(item.maSV)}>
+                <Ionicons name="ellipsis-vertical" size={20} color="#555" />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      />
+
+      {/* Modal nhập email */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPressOut={() => setShowModal(false)}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              padding: 20,
+              borderRadius: 12,
+              width: "80%",
+            }}
+          >
+            <Text style={{ fontWeight: "bold", marginBottom: 10 }}>
+              {addType === "sinhvien"
+                ? "📨 Thêm sinh viên"
+                : "📨 Thêm giảng viên"}
+            </Text>
+            <TextInput
+              placeholder="Nhập email người dùng..."
+              value={inputEmail}
+              onChangeText={setInputEmail}
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                marginBottom: 12,
+              }}
+            />
+            <TouchableOpacity
+              onPress={handleAddUser}
+              style={{
+                backgroundColor: "#0288d1",
+                paddingVertical: 10,
+                borderRadius: 8,
               }}
             >
-              <Image
-                source={{
-                  uri:
-                    item.avatar || "https://i.pravatar.cc/300?u=" + item.maSV,
-                }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 12,
-                  backgroundColor: "#444",
-                }}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                  {item.tenSV}
-                </Text>
-                <Text style={{ color: "#aaa" }}>Mã SV: {item.maSV}</Text>
-              </View>
-              {isGV && (
-                <Button
-                  title="❌ Xoá"
-                  color="red"
-                  onPress={() => handleRemoveSinhVien(item.maSV)}
-                />
-              )}
-              <View style={{ flex: 1 }} />
-            </View>
-          )}
-        />
-      )}
+              <Text style={{ color: "#fff", textAlign: "center" }}>Thêm</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
