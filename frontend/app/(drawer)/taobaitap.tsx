@@ -46,32 +46,32 @@ function BaseForm({
   const [tep, setTep] = useState<any>(null);
 
   const chonTep = async () => {
-  const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
+    const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
 
-  if (!res.canceled && res.assets && res.assets.length > 0) {
-    const asset = res.assets[0];
-    const originalUri = asset.uri;
-    const fileName = asset.name || `tep-${Date.now()}`;
-    const newPath = FileSystem.documentDirectory + encodeURIComponent(fileName); // tránh lỗi tên
+    if (!res.canceled && res.assets && res.assets.length > 0) {
+      const asset = res.assets[0];
+      const originalUri = asset.uri;
+      const fileName = asset.name || `tep-${Date.now()}`;
+      const newPath = FileSystem.documentDirectory + encodeURIComponent(fileName); // tránh lỗi tên
 
-    try {
-      // Copy file từ content:// hoặc uri lạ sang file://
-      await FileSystem.copyAsync({
-        from: originalUri,
-        to: newPath,
-      });
+      try {
+        // Copy file từ content:// hoặc uri lạ sang file://
+        await FileSystem.copyAsync({
+          from: originalUri,
+          to: newPath,
+        });
 
-      setTep({
-        ...asset,
-        uri: newPath, // ✅ uri chuẩn, luôn file://
-        name: fileName,
-      });
-    } catch (err) {
-      console.error("❌ Lỗi khi copy file:", err);
-      Alert.alert("Lỗi", "Không thể xử lý tệp đính kèm");
+        setTep({
+          ...asset,
+          uri: newPath, // ✅ uri chuẩn, luôn file://
+          name: fileName,
+        });
+      } catch (err) {
+        console.error("❌ Lỗi khi copy file:", err);
+        Alert.alert("Lỗi", "Không thể xử lý tệp đính kèm");
+      }
     }
-  }
-};
+  };
 
 
   const handleSubmit = async () => {

@@ -1,12 +1,13 @@
 import { useLopHocPhan } from "@/context/_context";
 import { useAuth } from "@/stores/useAuth";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   ImageBackground,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -49,6 +50,9 @@ export default function LopHocPhanDetail() {
   const [baiViet, setBaiViet] = useState<BaiViet[]>([]);
   const { user } = useAuth();
 
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+
   const fetchData = async () => {
     try {
       const res = await fetch(`http://192.168.1.101:3000/lophocphan/${id}`);
@@ -66,22 +70,16 @@ export default function LopHocPhanDetail() {
 
   const handleDelete = (id: number) => {
     Alert.alert("Xác nhận xóa", "Bạn có chắc chắn muốn xóa bài viết này?", [
-      {
-        text: "Hủy",
-        style: "cancel",
-      },
+      { text: "Hủy", style: "cancel" },
       {
         text: "Xóa",
         style: "destructive",
         onPress: async () => {
           try {
             const token = await AsyncStorage.getItem("token");
-
             const res = await fetch(`http://192.168.1.101:3000/baiviet/${id}`, {
               method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+              headers: { Authorization: `Bearer ${token}` },
             });
 
             const result = await res.json();
@@ -100,6 +98,12 @@ export default function LopHocPhanDetail() {
     ]);
   };
 
+  const handleEdit = (id: number) => {
+    setShowMenu(false);
+    alert(`🔧 Chức năng chỉnh sửa sẽ cập nhật sau (ID: ${id})`);
+    // Sau này dùng: router.push(`/chinhsuabaiviet?id=${id}`);
+  };
+
   useFocusEffect(
     useCallback(() => {
       if (id) fetchData();
@@ -108,7 +112,7 @@ export default function LopHocPhanDetail() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header lớp */}
+      {/* Header */}
       <View style={styles.header}>
         <ImageBackground
           source={require("../../../../../../assets/images/icon.png")}
@@ -130,7 +134,7 @@ export default function LopHocPhanDetail() {
         </ImageBackground>
       </View>
 
-      {/* Danh sách bài viết */}
+      {/* Nút tạo bài viết */}
       <TouchableOpacity
         style={styles.newPostBtn}
         onPress={() => router.push(`/taobaiviet?maLHP=${id}`)}
@@ -140,6 +144,7 @@ export default function LopHocPhanDetail() {
         </Text>
       </TouchableOpacity>
 
+      {/* Danh sách bài viết */}
       {baiViet.filter((bv) => bv.LoaiBV === 0).length === 0 ? (
         <Text style={{ textAlign: "center", color: "#666" }}>
           Chưa có bài viết nào.
@@ -153,31 +158,80 @@ export default function LopHocPhanDetail() {
               style={styles.postCard}
               onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
             >
-              <View style={styles.postHeader}>
-                <View style={styles.avatar}>
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                    {user?.email?.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <View style={styles.postHeader}>
+                  <View style={styles.avatar}>
+                    <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                      {user?.email?.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
                   <Text style={styles.postDate}>
                     {bv.NgayTao
                       ? new Date(bv.NgayTao).toLocaleDateString("vi-VN")
                       : "Không rõ"}
                   </Text>
                 </View>
+
+                {/* Dấu 3 chấm */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedPostId(bv.ID);
+                    setShowMenu(true);
+                  }}
+                >
+                  <MaterialIcons name="more-vert" size={24} color="black" />
+                </TouchableOpacity>
               </View>
+
               <Text style={styles.postTitle}>{bv.TieuDe}</Text>
               <Text style={styles.postContent}>{bv.NoiDung}</Text>
-              <TouchableOpacity
-                style={{ marginTop: 8 }}
-                onPress={() => handleDelete(bv.ID)}
-              >
-                <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
-              </TouchableOpacity>
             </TouchableOpacity>
           ))
       )}
+
+      {/* Menu 3 chấm */}
+      <Modal
+        visible={showMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          onPressOut={() => setShowMenu(false)}
+        >
+          <View style={styles.menuBox}>
+            <TouchableOpacity
+              style={styles.menuItemBox}
+              onPress={() => {
+                if (selectedPostId !== null) {
+                  handleEdit(selectedPostId);
+                }
+              }}
+            >
+              <Text style={styles.menuItem}>✏️ Chỉnh sửa</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItemBox}
+              onPress={() => {
+                if (selectedPostId !== null) {
+                  handleDelete(selectedPostId);
+                }
+                setShowMenu(false);
+              }}
+            >
+              <Text style={[styles.menuItem, { color: "red" }]}>🗑 Xoá</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -198,7 +252,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     padding: 12,
-    backgroundColor: "rgba(0,0,0,0.4)", // optional overlay for contrast
+    backgroundColor: "rgba(0,0,0,0.4)",
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
     height: 125,
@@ -228,7 +282,6 @@ const styles = StyleSheet.create({
   postHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
   },
   avatar: {
     width: 32,
@@ -252,5 +305,25 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     color: "#333",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuBox: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 8,
+    minWidth: 140,
+    elevation: 5,
+  },
+  menuItemBox: {
+    paddingVertical: 8,
+  },
+  menuItem: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

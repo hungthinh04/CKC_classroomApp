@@ -12,6 +12,7 @@ export default function CustomHeader() {
 
   const navigation = useNavigation();
   const { tenLHP } = useLopHocPhan();
+
   useEffect(() => {
     if (!id) return;
     fetch(`http://192.168.1.101:3001/lophophan/${id}`)
@@ -25,13 +26,13 @@ export default function CustomHeader() {
         return (
           <>
             <TouchableOpacity>
-              <Ionicons name="filter-outline" size={22} color="#ccc" />
+              <Ionicons name="filter-outline" size={22} color="#555" />
             </TouchableOpacity>
             <TouchableOpacity>
-              <Ionicons name="camera-outline" size={22} color="#ccc" />
+              <Ionicons name="camera-outline" size={22} color="#555" />
             </TouchableOpacity>
             <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+              <Ionicons name="ellipsis-vertical" size={20} color="#555" />
             </TouchableOpacity>
           </>
         );
@@ -39,17 +40,17 @@ export default function CustomHeader() {
         return (
           <>
             <TouchableOpacity>
-              <Ionicons name="filter-outline" size={22} color="#ccc" />
+              <Ionicons name="filter-outline" size={22} color="#555" />
             </TouchableOpacity>
             <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+              <Ionicons name="ellipsis-vertical" size={20} color="#555" />
             </TouchableOpacity>
           </>
         );
       case "(tabs)/peopleScreen":
         return (
           <TouchableOpacity>
-            <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+            <Ionicons name="ellipsis-vertical" size={20} color="#555" />
           </TouchableOpacity>
         );
       default:
@@ -60,16 +61,11 @@ export default function CustomHeader() {
   return (
     <View style={styles.container}>
       {/* Menu trái */}
-      <TouchableOpacity>
-        <Ionicons
-          name="menu"
-          size={24}
-          color="#ccc"
-          onPress={() => navigation.openDrawer()}
-        />
+      <TouchableOpacity onPress={() => navigation.openDrawer()}>
+        <Ionicons name="menu" size={24} color="#111" />
       </TouchableOpacity>
 
-      {/* Tên lớp (ở giữa) */}
+      {/* Tên lớp ở giữa */}
       <Text style={styles.title} numberOfLines={1}>
         {title}
       </Text>
@@ -84,17 +80,26 @@ const styles = StyleSheet.create({
   container: {
     height: 50,
     paddingHorizontal: 16,
-    backgroundColor: "#1f1f1f",
+    backgroundColor: "#fff", // Nền trắng
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#ddd",
+
+    // Đổ bóng nhẹ (cho Android & iOS)
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   title: {
     flex: 1,
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
-    color: "#4f83ff",
+    color: "#111",
     marginHorizontal: 12,
   },
   iconGroup: {

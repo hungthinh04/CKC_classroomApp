@@ -6,45 +6,45 @@ import * as FileSystem from "expo-file-system";
 export default function ChiTietBaiTapScreen() {
   const { id } = useLocalSearchParams();
   const [bv, setBv] = useState<any>(null);
-const [tep, setTep] = useState<any>(null);
+  const [tep, setTep] = useState<any>(null);
   useEffect(() => {
-    fetch(`http://192.168.1.104:3000/baiviet/chitiet/${id}`)
+    fetch(`http://192.168.1.101:3000/baiviet/chitiet/${id}`)
       .then((res) => res.json())
       .then((data) => setBv(data))
-      .catch(() => {});
+      .catch(() => { });
   }, [id]);
 
   const chonTep = async () => {
-  const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
-  if (res.type === "success") setTep(res);
-};
+    const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
+    if (res.type === "success") setTep(res);
+  };
 
-const uploadFile = async () => {
-  const formData = new FormData();
-  formData.append("file", {
-    uri: tep.uri,
-    name: tep.name,
-    type: "*/*",
-  } as any);
-  formData.append("MaBaiViet", id);
+  const uploadFile = async () => {
+    const formData = new FormData();
+    formData.append("file", {
+      uri: tep.uri,
+      name: tep.name,
+      type: "*/*",
+    } as any);
+    formData.append("MaBaiViet", id);
 
-  try {
-    const res = await fetch("http://192.168.1.104:3000/file/upload", {
-      method: "POST",
-      headers: { "Content-Type": "multipart/form-data" },
-      body: formData,
-    });
+    try {
+      const res = await fetch("http://192.168.1.101:3000/file/upload", {
+        method: "POST",
+        headers: { "Content-Type": "multipart/form-data" },
+        body: formData,
+      });
 
-    const result = await res.json();
-    if (res.ok) alert("✅ Upload thành công!");
-    else alert("❌ " + result.message);
-  } catch (err) {
-    alert("Lỗi khi gửi file");
-  }
-};
+      const result = await res.json();
+      if (res.ok) alert("✅ Upload thành công!");
+      else alert("❌ " + result.message);
+    } catch (err) {
+      alert("Lỗi khi gửi file");
+    }
+  };
 
   if (!bv) return null;
-console.log("📦 Dữ liệu bài tập:", bv);
+  console.log("📦 Dữ liệu bài tập:", bv);
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>{bv.TieuDe}</Text>
@@ -60,25 +60,25 @@ console.log("📦 Dữ liệu bài tập:", bv);
       </Text>
       <Text style={styles.content}>{bv.NoiDung}</Text>
       {bv.DuongDanFile && (
-  <TouchableOpacity
-    style={{ marginTop: 10 }}
-    onPress={() => Linking.openURL(`http://192.168.1.104:3000${bv.DuongDanFile}`)}
-  >
-    <Text style={{ color: "blue" }}>📎 Mở file đính kèm</Text>
-  </TouchableOpacity>
-)}
+        <TouchableOpacity
+          style={{ marginTop: 10 }}
+          onPress={() => Linking.openURL(`http://192.168.1.101:3000${bv.DuongDanFile}`)}
+        >
+          <Text style={{ color: "blue" }}>📎 Mở file đính kèm</Text>
+        </TouchableOpacity>
+      )}
 
       {bv.LoaiBV === 1 && (
-  <View>
-    <TouchableOpacity onPress={chonTep}>
-      <Text style={{ color: "blue" }}>
-        {tep ? `📎 ${tep.name}` : "📎 Chọn tệp bài tập"}
-      </Text>
-    </TouchableOpacity>
+        <View>
+          <TouchableOpacity onPress={chonTep}>
+            <Text style={{ color: "blue" }}>
+              {tep ? `📎 ${tep.name}` : "📎 Chọn tệp bài tập"}
+            </Text>
+          </TouchableOpacity>
 
-    <Button title="📤 Gửi file bài tập" onPress={uploadFile} />
-  </View>
-)}
+          <Button title="📤 Gửi file bài tập" onPress={uploadFile} />
+        </View>
+      )}
 
     </ScrollView>
   );
