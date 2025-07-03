@@ -31,7 +31,8 @@ router.get("/:id", controller.getBaiVietByLHP);
 // router.post("/tao", auth, checkGiangVien, controller.createBaiViet);
 
 router.delete("/:id", auth, checkGiangVien, controller.deleteBaiViet);
-router.post("/nopbai", controller.nopBai);
+// router.post("/nopbai", controller.nopBai);
+router.post("/nopbai", auth, upload.single("file"), controller.nopBai);
 router.get('/chitiet/:id', controller.getBaiVietById);
 
 
