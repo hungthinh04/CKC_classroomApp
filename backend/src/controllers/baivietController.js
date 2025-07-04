@@ -253,25 +253,24 @@ exports.getBaiVietById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.request()
-      .input("ID", sql.Int, id)
-      .query(`
-        SELECT 
-          bv.ID,
-          bv.TieuDe AS tieuDe,
-          bv.NoiDung AS noiDung,
-          bv.LoaiBV AS loaiBV,
-          bv.NgayTao AS ngayTao,
-          bv.NgayKetThuc AS hanNop,
-          bv.DuongDanFile AS fileUrl,
-          gv.ID AS maGV,
-          gv.TenGV AS tenGV,
-          gv.HoGV AS hoGV
-        FROM BAIVIET bv
-        JOIN LOPHOCPHAN lhp ON bv.MaLHP = lhp.ID
-        JOIN GIANGVIENN gv ON lhp.MaGV = gv.ID
-        WHERE bv.ID = @ID
-      `);
+    const result = await pool.request().input("ID", sql.Int, id).query(`
+    SELECT 
+      bv.ID,
+      bv.TieuDe AS tieuDe,
+      bv.NoiDung AS noiDung,
+      bv.LoaiBV AS loaiBV,
+      bv.NgayTao AS ngayTao,
+      bv.NgayKetThuc AS hanNop,
+      bv.DuongDanFile AS fileUrl,
+      u.ID AS maNguoiDang,
+      u.Email,
+      COALESCE(sv.HoTen, gv.HoGV + ' ' + gv.TenGV, u.Email) AS tenNguoiDang
+    FROM BAIVIET bv
+    JOIN USERS u ON bv.MaTK = u.ID
+    LEFT JOIN SINHVIEN sv ON sv.MaTK = u.ID
+    LEFT JOIN GIANGVIENN gv ON gv.MaTK = u.ID
+    WHERE bv.ID = @ID
+  `);
 
     if (result.recordset.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy bài viết" });
@@ -281,9 +280,7 @@ exports.getBaiVietById = async (req, res) => {
 
     res.json({
       ...data,
-      fileUrl: data.fileUrl
-        ? `http://192.168.1.104:3000${data.fileUrl}`
-        : null,
+      fileUrl: data.fileUrl ? `http://192.168.1.104:3000${data.fileUrl}` : null,
     });
   } catch (err) {
     console.error("❌ Lỗi khi lấy chi tiết bài viết:", err);

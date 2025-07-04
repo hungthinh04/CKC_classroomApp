@@ -95,6 +95,7 @@
 
       try {
         const token = await AsyncStorage.getItem("token");
+          console.log("token", token);
         console.log("📡 Gửi tới:", "http://192.168.1.104:3000/baiviet/tao");
         console.log("📎 file:", tep);
         console.log("📤 form:", formData);
@@ -111,19 +112,17 @@
           console.log("🧾 file :", tep);
         }
 
-        const res = await axios.post(
-          "http://192.168.1.104:3000/baiviet/tao",
-    
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-            
-          body: formData,
-          },
-        );
+       const res = await axios.post(
+  "http://192.168.1.104:3000/baiviet/tao",
+  formData,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+  }
+);
+
 
         if (res.status === 201) {
           const fileUrl = res.data.fileUrl
@@ -135,7 +134,7 @@
             `${submitLabel} thành công${fileUrl ? `\nFile: ${fileUrl}` : ""}`,
             [
               {
-                text: "Xem bài viết",
+                text: "Xem bài tập",
                 onPress: () => {
                   // tuỳ bạn, hoặc chuyển trang
                   router.back();
