@@ -199,20 +199,20 @@ export default function ChiTietBaiTapScreen() {
   return (
     <ScrollView style={styles.container}>
       {/* Tiêu đề bài viết */}
-      <Text style={styles.title}>{bv.TieuDe}</Text>
+      <Text style={styles.title}>{bv.tieuDe}</Text>
 
       {/* Nội dung bài viết */}
-      <Text style={styles.content}>{bv.NoiDung}</Text>
+      <Text style={styles.content}>{bv.noiDung}</Text>
 
       {/* Thông tin metadata */}
       <View style={styles.metaBox}>
-        <Text style={styles.meta}>🧾 Mã: {bv.MaBaiViet}</Text>
-        <Text style={styles.meta}>🗓 Ngày tạo: {bv.NgayTao?.slice(0, 10)}</Text>
+        {/* <Text style={styles.meta}>🧾 Mã: {bv.maBaiViet}</Text> */}
+        <Text style={styles.meta}>🗓 Ngày tạo: {bv.ngayTao?.slice(0, 10)}</Text>
         <Text style={styles.meta}>
-          ⏰ Hạn nộp: {bv.NgayKetThuc?.slice(0, 10)}
+          ⏰ Hạn nộp: {bv.hanNop?.slice(0, 10)}
         </Text>
         <Text style={styles.meta}>
-          👨‍🏫 GV: {bv.HoGV} {bv.TenGV}
+          👨‍🏫 GV: {bv.hoGV} {bv.tenGV}
         </Text>
       </View>
 
@@ -227,7 +227,7 @@ export default function ChiTietBaiTapScreen() {
       )}
 
       {/* Nộp bài */}
-      {bv.LoaiBV === 1 && (
+      {bv.loaiBV === 1 && (
         <View style={styles.submitBox}>
           <Text style={styles.sectionLabel}>Nộp bài tập của bạn</Text>
 

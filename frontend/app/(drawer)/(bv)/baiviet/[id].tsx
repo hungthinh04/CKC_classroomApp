@@ -28,8 +28,7 @@ export default function BaiVietDetail() {
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
 
-  const isImage = (url: string) =>
-    url.match(/\.(jpeg|jpg|png|gif|webp)$/i);
+  const isImage = (url: string) => url.match(/\.(jpeg|jpg|png|gif|webp)$/i);
 
   useEffect(() => {
     fetch(`http://192.168.1.104:3000/baiviet/id/${id}`)
@@ -58,17 +57,21 @@ export default function BaiVietDetail() {
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const res = await fetch(
-        `http://192.168.1.104:3000/baiviet/${baiViet.id}/comment`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ noiDung: newComment }),
-        }
-      );
+      const postId = parseInt(String(baiViet?.id));
+if (!postId) return;
+
+const res = await fetch(
+  `http://192.168.1.104:3000/baiviet/${postId}/comment`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ noiDung: newComment }),
+  }
+);
+
 
       if (res.ok) {
         setNewComment("");
@@ -107,7 +110,8 @@ export default function BaiVietDetail() {
     >
       <Text style={styles.title}>{baiViet.tieuDe}</Text>
       <Text style={styles.meta}>
-        Người đăng: {baiViet.hoGV} {baiViet.tenGV}
+        Người đăng: {baiViet.tenNguoiDang || "Không rõ"} – 🕒{" "}
+        {new Date(baiViet.ngayTao).toLocaleString("vi-VN")}
       </Text>
 
       <Text style={styles.content}>{baiViet.noiDung}</Text>
@@ -140,7 +144,7 @@ export default function BaiVietDetail() {
         renderItem={({ item }) => (
           <View style={styles.commentItem}>
             <Text style={styles.commentUser}>
-              {item.MaNguoiDung || "Người dùng"}:
+              {item.TenNguoiDung || "Người dùng"}:
             </Text>
             <Text style={styles.commentText}>{item.NoiDung}</Text>
           </View>
