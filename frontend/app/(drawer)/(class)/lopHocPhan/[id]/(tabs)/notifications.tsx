@@ -2,10 +2,22 @@ import { useLopHocPhan } from "@/context/_context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, router } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View, Modal, Pressable, Linking, Image } from "react-native";
+import {
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Modal,
+  Pressable,
+  Linking,
+  Image,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { WebView } from "react-native-webview";  // Để hiển thị PDF
-import PDFReader from 'react-native-pdf';  // Nếu muốn sử dụng thư viện PDF chuyên biệt
+import { WebView } from "react-native-webview"; // Để hiển thị PDF
+import PDFReader from "react-native-pdf"; // Nếu muốn sử dụng thư viện PDF chuyên biệt
+import { BASE_URL } from "@/constants/Link";
 
 type BaiViet = {
   id: number;
@@ -26,7 +38,7 @@ export default function BaiTapScreen() {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch(`http://192.168.1.104:3000/baiviet/loai?maLHP=${id}&loaiBV=1`);
+      const res = await fetch(`${BASE_URL}/baiviet/loai?maLHP=${id}&loaiBV=1`);
       const data = await res.json();
       setTasks(data);
     } catch (err) {
@@ -43,7 +55,7 @@ export default function BaiTapScreen() {
         onPress: async () => {
           try {
             const token = await AsyncStorage.getItem("token");
-            const res = await fetch(`http://192.168.1.104:3000/baiviet/${id}`, {
+            const res = await fetch(`${BASE_URL}/baiviet/${id}`, {
               method: "DELETE",
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -84,7 +96,9 @@ export default function BaiTapScreen() {
         keyExtractor={(item) => item?.id?.toString()}
         renderItem={({ item }) => {
           // Tạo URL cho file
-          const fileUrl = item.duongDanFile ? `http://192.168.1.104:3000${item.duongDanFile}` : null;
+          const fileUrl = item.duongDanFile
+            ? `${BASE_URL}${item.duongDanFile}`
+            : null;
 
           // Kiểm tra loại file
           const isImage = fileUrl?.match(/\.(jpg|jpeg|png)$/i);
@@ -112,22 +126,35 @@ export default function BaiTapScreen() {
               {isImage ? (
                 <Image
                   source={{ uri: fileUrl }}
-                  style={{ width: "100%", height: 200, marginTop: 12, borderRadius: 6 }}
+                  style={{
+                    width: "100%",
+                    height: 200,
+                    marginTop: 12,
+                    borderRadius: 6,
+                  }}
                   resizeMode="contain"
                 />
               ) : isPDF && fileUrl ? (
-                             <TouchableOpacity onPress={() => Linking.openURL(fileUrl)}>
-                  <Text style={{ color: 'skyblue', marginTop: 6 }}>📎 Xem PDF</Text>
-                </TouchableOpacity>
-              ) : isDOCX ? (
                 <TouchableOpacity onPress={() => Linking.openURL(fileUrl)}>
-                  <Text style={{ color: 'skyblue', marginTop: 6 }}>📎 Xem DOCX</Text>
+                  <Text style={{ color: "skyblue", marginTop: 6 }}>
+                    📎 Xem PDF
+                  </Text>
+                </TouchableOpacity>
+              ) : isDOCX && fileUrl ? (
+                <TouchableOpacity onPress={() => Linking.openURL(fileUrl)}>
+                  <Text style={{ color: "skyblue", marginTop: 6 }}>
+                    📎 Xem DOCX
+                  </Text>
                 </TouchableOpacity>
               ) : (
                 // Nếu là file khác, hiển thị liên kết để mở
                 fileUrl && (
-                  <TouchableOpacity onPress={() => fileUrl && Linking.openURL(fileUrl)}>
-                    <Text style={{ color: 'skyblue', marginTop: 6 }}>📎 Xem file đính kèm</Text>
+                  <TouchableOpacity
+                    onPress={() => fileUrl && Linking.openURL(fileUrl)}
+                  >
+                    <Text style={{ color: "skyblue", marginTop: 6 }}>
+                      📎 Xem file đính kèm
+                    </Text>
                   </TouchableOpacity>
                 )
               )}
@@ -159,22 +186,17 @@ export default function BaiTapScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Tạo</Text>
 
-            {[
-              { label: "📝 Bài tập", type: 1 },
-              { label: "📋 Bài kiểm tra", type: 2 },
-              { label: "❓ Câu hỏi", type: 0 },
-              { label: "📚 Tài liệu", type: 3 },
-              { label: "♻️ Sử dụng lại bài đăng", type: 4 },
-              { label: "🏷️ Chủ đề", type: 5 },
-            ].map((item, index) => (
-              <Pressable
-                key={index}
-                style={styles.optionButton}
-                onPress={() => handleCreate(item.type)}
-              >
-                <Text style={styles.optionText}>{item.label}</Text>
-              </Pressable>
-            ))}
+            {[{ label: "📝 Bài tập", type: 1 }, { label: "📋 Bài kiểm tra", type: 2 }, { label: "❓ Câu hỏi", type: 0 }, { label: "📚 Tài liệu", type: 3 }].map(
+              (item, index) => (
+                <Pressable
+                  key={index}
+                  style={styles.optionButton}
+                  onPress={() => handleCreate(item.type)}
+                >
+                  <Text style={styles.optionText}>{item.label}</Text>
+                </Pressable>
+              )
+            )}
 
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <Text

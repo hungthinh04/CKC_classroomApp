@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  Button,
   Linking,
   Alert,
   TextInput,
@@ -18,9 +17,10 @@ import {
 import { useAuth } from "@/stores/useAuth";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BASE_URL } from "@/constants/Link";
 
 export default function BaiVietDetail() {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams(); // Lấy ID từ tham số của URL
   const { user } = useAuth();
   const navigation = useNavigation();
   const [baiViet, setBaiViet] = useState<any>(null);
@@ -31,9 +31,11 @@ export default function BaiVietDetail() {
   const isImage = (url: string) => url.match(/\.(jpeg|jpg|png|gif|webp)$/i);
 
   useEffect(() => {
-    fetch(`http://192.168.1.104:3000/baiviet/id/${id}`)
+    fetch(`${BASE_URL}/baiviet/id/${id}`)
       .then((res) => res.json())
       .then((data) => {
+        console.log("Dữ liệu bài viết:", data);
+
         setBaiViet(data);
         setLoading(false);
       })
@@ -44,40 +46,43 @@ export default function BaiVietDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (baiViet?.id) {
-      fetch(`http://192.168.1.104:3000/baiviet/${baiViet.id}/comments`)
+    if (baiViet?.ID) {
+      fetch(`${BASE_URL}/baiviet/${baiViet.ID}/comments`)
         .then((res) => res.json())
-        .then(setComments)
+
+        .then((data) => {
+          console.log("Dữ liệu nhận xét:", data); // Kiểm tra dữ liệu nhận được
+          setComments(data);
+        })
         .catch((err) => console.error("❌ Lỗi lấy comments:", err));
     }
-  }, [baiViet?.id]);
+  }, [baiViet?.ID]);
 
   const submitComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim()) {
+      Alert.alert("❌ Lỗi", "Nhận xét không được để trống");
+      return;
+    }
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const postId = parseInt(String(baiViet?.id));
-if (!postId) return;
+      const postId = parseInt(String(baiViet?.ID));
+      console.log(postId);
+      if (!postId) return;
 
-const res = await fetch(
-  `http://192.168.1.104:3000/baiviet/${postId}/comment`,
-  {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ noiDung: newComment }),
-  }
-);
-
+      const res = await fetch(`${BASE_URL}/baiviet/${postId}/comment`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ noiDung: newComment }),
+      });
+      console.log("Gửi nhận xét:", baiViet.ID, newComment, token);
 
       if (res.ok) {
         setNewComment("");
-        const fresh = await fetch(
-          `http://192.168.1.104:3000/baiviet/${baiViet.id}/comments`
-        );
+        const fresh = await fetch(`${BASE_URL}/baiviet/${baiViet.ID}/comments`);
         setComments(await fresh.json());
       } else {
         Alert.alert("❌ Lỗi", "Không thể gửi nhận xét");
@@ -95,6 +100,7 @@ const res = await fetch(
     );
   }
 
+  console.log(comments);
   if (!baiViet) {
     return (
       <View style={styles.center}>
@@ -102,7 +108,6 @@ const res = await fetch(
       </View>
     );
   }
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -144,7 +149,9 @@ const res = await fetch(
         renderItem={({ item }) => (
           <View style={styles.commentItem}>
             <Text style={styles.commentUser}>
-              {item.TenNguoiDung || "Người dùng"}:
+              {item.Quyen === 1
+                ? `${item.TenNguoiDung} (Giảng viên)` // Nếu là giảng viên, hiển thị "Giảng viên"
+                : `${item.TenNguoiDung} (Sinh viên)`}
             </Text>
             <Text style={styles.commentText}>{item.NoiDung}</Text>
           </View>
@@ -166,7 +173,7 @@ const res = await fetch(
           style={styles.commentInput}
         />
         <TouchableOpacity onPress={submitComment}>
-          <Text style={styles.sendBtn}>📩</Text>
+          <Text style={styles.sendBtn}>Gửi</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

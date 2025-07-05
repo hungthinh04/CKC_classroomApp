@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
+import { BASE_URL } from "@/constants/Link";
 import {
   Alert,
   Image,
@@ -50,8 +51,8 @@ export default function LopHocPhanDetail() {
   const { user } = useAuth();
   const fetchData = async () => {
     try {
-      const res = await fetch(`http://192.168.1.104:3000/lophocphan/${id}`);
-      const res1 = await fetch(`http://192.168.1.104:3000/baiviet/${id}`);
+      const res = await fetch(`${BASE_URL}/lophocphan/${id}`);
+      const res1 = await fetch(`${BASE_URL}/baiviet/${id}`);
 
       const data = await res.json();
       const data1 = await res1.json();
@@ -63,12 +64,8 @@ export default function LopHocPhanDetail() {
     }
   };
 
-  
   const handleDelete = (id: number) => {
-  Alert.alert(
-    "Xác nhận xóa",
-    "Bạn có chắc chắn muốn xóa bài viết này?",
-    [
+    Alert.alert("Xác nhận xóa", "Bạn có chắc chắn muốn xóa bài viết này?", [
       {
         text: "Hủy",
         style: "cancel",
@@ -80,7 +77,7 @@ export default function LopHocPhanDetail() {
           try {
             const token = await AsyncStorage.getItem("token");
 
-            const res = await fetch(`http://192.168.1.104:3000/baiviet/${id}`, {
+            const res = await fetch(`${BASE_URL}/baiviet/${id}`, {
               method: "DELETE",
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -100,9 +97,8 @@ export default function LopHocPhanDetail() {
           }
         },
       },
-    ]
-  );
-};
+    ]);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -179,12 +175,12 @@ export default function LopHocPhanDetail() {
               </View>
               <Text style={styles.postTitle}>{bv.TieuDe}</Text>
               <Text style={styles.postContent}>{bv.NoiDung}</Text>
-                <TouchableOpacity
-              style={{ marginTop: 8 }}
-              onPress={() => handleDelete(bv.ID)}
-            >
-              <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={{ marginTop: 8 }}
+                onPress={() => handleDelete(bv.ID)}
+              >
+                <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
           ))
       )}

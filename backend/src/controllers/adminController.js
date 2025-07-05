@@ -41,7 +41,7 @@ exports.getUserById = async (req, res) => {
       email: user.Email,
       matKhau: user.MatKhau,
       quyen: user.Quyen,
-      trangThai: user.TrangThai
+      trangThai: user.TrangThai,
     });
   } catch (err) {
     console.error("Lỗi lấy user:", err);
@@ -59,10 +59,11 @@ exports.getLopHocById = async (req, res) => {
       .query("SELECT * FROM LOPHOC WHERE ID = @ID");
 
     const lop = result.recordset[0];
-    if (!lop) return res.status(404).json({ message: "Không tìm thấy lớp học" });
+    if (!lop)
+      return res.status(404).json({ message: "Không tìm thấy lớp học" });
 
     res.json({
-      id: lop.ID,        
+      id: lop.ID,
       maLop: lop.MaLop,
       tenLP: lop.TenLP,
       maBM: lop.MaBM,
@@ -72,8 +73,6 @@ exports.getLopHocById = async (req, res) => {
     res.status(500).json({ message: "Lỗi truy vấn lớp học" });
   }
 };
-
-
 
 exports.getBoMonById = async (req, res) => {
   const id = req.params.id;
@@ -235,7 +234,6 @@ exports.getAllLopHopPhan = async (req, res) => {
   }
 };
 
-
 exports.getAllLopHoc = async (req, res) => {
   try {
     const result = await pool.request().query("SELECT * FROM LOPHOC");
@@ -254,10 +252,22 @@ exports.getAllLopHoc = async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Lỗi truy vấn khoa" });
   }
-};
-exports.getAllUsers = async (req, res) => {
+};exports.getAllUsers = async (req, res) => {
   try {
-    const result = await pool.request().query("SELECT * FROM USERS");
+    const result = await pool.request().query(`
+      SELECT 
+        u.ID,
+        u.Email,
+        u.MatKhau,
+        u.Quyen,
+        u.TrangThai,
+        u.MaNguoiDung,
+        COALESCE(sv.HoTen, gv.HoGV + ' ' + gv.TenGV, u.HoTen) AS HoTen
+      FROM USERS u
+      LEFT JOIN SINHVIEN sv ON u.ID = sv.MaTK
+      LEFT JOIN GIANGVIENN gv ON u.ID = gv.MaTK
+    `);
+
     const total = result.recordset.length;
 
     res.set("Content-Range", `users 0-${total - 1}/${total}`);
@@ -271,7 +281,7 @@ exports.getAllUsers = async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi truy vấn khoa" });
+    res.status(500).json({ message: "Lỗi truy vấn users" });
   }
 };
 
@@ -587,7 +597,6 @@ exports.getLopHocPhanById = async (req, res) => {
   }
 };
 
-
 //quan li giang vien
 
 exports.getAllGiangVien = async (req, res) => {
@@ -873,6 +882,7 @@ exports.addSinhVien = async (req, res) => {
       .input("MaNguoiDung", sql.VarChar(20), maSinhVien)
       .input("ID", sql.Int, newUserId).query(`
         UPDATE USERS SET Email = @Email, MaNguoiDung = @MaNguoiDung WHERE ID = @ID
+        
       `);
 
     // 3. Thêm vào bảng SINHVIEN
@@ -889,6 +899,13 @@ exports.addSinhVien = async (req, res) => {
 
     const inserted = result.recordset[0];
     res.status(201).json({ id: inserted.ID, ...inserted });
+  //   const query1 = `INSERT INTO SINHVIEN_LHP (MaSV, MaLHP) SELECT MaSinhVien, MaLopHoc FROM SINHVIEN WHERE ID = ${inserted.ID}`;
+  //   await pool.request().input("ID", sql.Int, inserted.ID).query(`
+  //   INSERT INTO SINHVIEN_LHP (MaSV, MaLHP)
+  //   SELECT MaTK, MaLopHoc FROM SINHVIEN WHERE ID = ${inserted.ID}
+  // `);
+
+  //   await pool.request().query(query1);
   } catch (err) {
     console.error("❌ Lỗi thêm sinh viên:", err);
     res.status(500).json({ message: "Không thể thêm sinh viên" });
@@ -996,7 +1013,9 @@ exports.addLopHoc = async (req, res) => {
         VALUES (@MaLop, @TenLP, @MaBM)
     `);
 
-    const result = await pool.request().query("SELECT TOP 1 * FROM LOPHOC ORDER BY ID DESC");
+    const result = await pool
+      .request()
+      .query("SELECT TOP 1 * FROM LOPHOC ORDER BY ID DESC");
     const inserted = result.recordset[0];
 
     res.status(201).json({ id: inserted.ID, ...inserted });
@@ -1066,7 +1085,7 @@ exports.addLopHoc = async (req, res) => {
 // };
 exports.updateUsers = async (req, res) => {
   const id = parseInt(req.params.id);
-  const { maNguoiDung, email, matKhau, quyen, trangThai } = req.body;
+  const { maNguoiDung, email, matKhau, hoTen, quyen, trangThai } = req.body;
 
   if (!maNguoiDung || !email || !matKhau) {
     console.log("📥 Body nhận được:", req.body);
@@ -1082,6 +1101,7 @@ exports.updateUsers = async (req, res) => {
       .input("ID", sql.Int, id)
       .input("MaNguoiDung", sql.VarChar(20), maNguoiDung)
       .input("Email", sql.NVarChar(100), email)
+      .input("HoTen", sql.NVarChar(255), hoTen)
       .input("MatKhau", sql.NVarChar(255), matKhau)
       .input("Quyen", sql.Int, quyen)
       .input("TrangThai", sql.SmallInt, trangThai).query(`
@@ -1089,6 +1109,7 @@ exports.updateUsers = async (req, res) => {
         SET MaNguoiDung = @MaNguoiDung,
             Email = @Email,
             MatKhau = @MatKhau,
+            HoTen = @HoTen,
             Quyen = @Quyen,
             TrangThai = @TrangThai
         WHERE ID = @ID;
@@ -1100,8 +1121,6 @@ exports.updateUsers = async (req, res) => {
     res.status(500).json({ message: "Không thể cập nhật user" });
   }
 };
-
-
 
 exports.deleteUsers = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -1130,7 +1149,6 @@ exports.updateLopHoc = async (req, res) => {
   const { maLop, tenLP, maBM } = req.body;
 
   if (!maLop || !tenLP || !maBM) {
-  
     return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
   }
 
@@ -1142,8 +1160,7 @@ exports.updateLopHoc = async (req, res) => {
       .input("ID", sql.Int, id)
       .input("MaLop", sql.VarChar(20), maLop)
       .input("TenLP", sql.NVarChar(255), tenLP)
-      .input("MaBM", sql.Int, maBM)
-      .query(`
+      .input("MaBM", sql.Int, maBM).query(`
         UPDATE LOPHOC
         SET MaLop = @MaLop,
             TenLP = @TenLP,
@@ -1192,7 +1209,9 @@ exports.addLopHoc = async (req, res) => {
         VALUES (@MaLop, @TenLP, @MaBM)
     `);
 
-    const result = await pool.request().query("SELECT TOP 1 * FROM LOPHOC ORDER BY ID DESC");
+    const result = await pool
+      .request()
+      .query("SELECT TOP 1 * FROM LOPHOC ORDER BY ID DESC");
     const inserted = result.recordset[0];
 
     res.status(201).json({ id: inserted.ID, ...inserted });
@@ -1203,7 +1222,18 @@ exports.addLopHoc = async (req, res) => {
 };
 
 exports.addLopHocPhan = async (req, res) => {
-  const { tenLHP, ngayTao, hocKy, chinhSach, namHoc, maGV, maLH, maMH, luuTru, trangThai } = req.body;
+  const {
+    tenLHP,
+    ngayTao,
+    hocKy,
+    chinhSach,
+    namHoc,
+    maGV,
+    maLH,
+    maMH,
+    luuTru,
+    trangThai,
+  } = req.body;
   console.log("Dữ liệu thêm lớp học phần:", req.body);
   try {
     await pool
@@ -1217,17 +1247,19 @@ exports.addLopHocPhan = async (req, res) => {
       .input("MaLH", sql.Int, maLH)
       .input("MaMH", sql.Int, maMH)
       .input("LuuTru", sql.SmallInt, luuTru)
-      .input("TrangThai", sql.SmallInt, trangThai)
-      .query(`
+      .input("TrangThai", sql.SmallInt, trangThai).query(`
         INSERT INTO LOPHOCPHAN (TenLHP, NgayTao, HocKy, ChinhSach, NamHoc, MaGV, MaLH, MaMH, LuuTru, TrangThai)
         VALUES (@TenLHP, @NgayTao, @HocKy, @ChinhSach, @NamHoc, @MaGV, @MaLH, @MaMH, @LuuTru, @TrangThai);
         
       `);
 
-    const result = await pool.request().query("SELECT TOP 1 * FROM LOPHOCPHAN ORDER BY ID DESC");
+    const result = await pool
+      .request()
+      .query("SELECT TOP 1 * FROM LOPHOCPHAN ORDER BY ID DESC");
     const inserted = result.recordset[0];
-
+    const query1 = `INSERT INTO SINHVIEN_LHP (MaSV, MaLHP,TrangThai) SELECT ID, ${inserted.ID}, 1 FROM SINHVIEN WHERE MaLopHoc = ${maLH}`;
     res.status(201).json({ id: inserted.ID, ...inserted });
+    await pool.request().query(query1);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Không thể thêm lớp học phần" });
@@ -1239,7 +1271,6 @@ exports.updateLopHoc = async (req, res) => {
   const { maLop, tenLP, maBM } = req.body;
 
   if (!maLop || !tenLP || !maBM) {
-  
     return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
   }
 
@@ -1251,8 +1282,7 @@ exports.updateLopHoc = async (req, res) => {
       .input("ID", sql.Int, id)
       .input("MaLop", sql.VarChar(20), maLop)
       .input("TenLP", sql.NVarChar(255), tenLP)
-      .input("MaBM", sql.Int, maBM)
-      .query(`
+      .input("MaBM", sql.Int, maBM).query(`
         UPDATE LOPHOC
         SET MaLop = @MaLop,
             TenLP = @TenLP,
@@ -1268,8 +1298,19 @@ exports.updateLopHoc = async (req, res) => {
 };
 exports.updateLopHocPhan = async (req, res) => {
   const id = parseInt(req.params.id);
-  const { tenLHP, ngayTao, hocKy, chinhSach, namHoc, maGV, maLH, maMH, luuTru, trangThai } = req.body;
-console.log("Dữ liệu update:", req.body);
+  const {
+    tenLHP,
+    ngayTao,
+    hocKy,
+    chinhSach,
+    namHoc,
+    maGV,
+    maLH,
+    maMH,
+    luuTru,
+    trangThai,
+  } = req.body;
+  console.log("Dữ liệu update:", req.body);
 
   try {
     await pool
@@ -1284,8 +1325,7 @@ console.log("Dữ liệu update:", req.body);
       .input("MaLH", sql.Int, maLH)
       .input("MaMH", sql.Int, maMH)
       .input("LuuTru", sql.SmallInt, luuTru)
-      .input("TrangThai", sql.SmallInt, trangThai)
-      .query(`
+      .input("TrangThai", sql.SmallInt, trangThai).query(`
         UPDATE LOPHOCPHAN
         SET TenLHP = @TenLHP, NgayTao = @NgayTao, HocKy = @HocKy,
             ChinhSach = @ChinhSach, NamHoc = @NamHoc, MaGV = @MaGV,
@@ -1293,7 +1333,19 @@ console.log("Dữ liệu update:", req.body);
         WHERE ID = @ID;
       `);
 
-    res.status(200).json({ id, tenLHP, ngayTao, hocKy, chinhSach, namHoc, maGV, maLH, maMH, luuTru, trangThai });
+    res.status(200).json({
+      id,
+      tenLHP,
+      ngayTao,
+      hocKy,
+      chinhSach,
+      namHoc,
+      maGV,
+      maLH,
+      maMH,
+      luuTru,
+      trangThai,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Không thể cập nhật lớp học phần" });
@@ -1314,7 +1366,9 @@ exports.deleteLopHocPhan = async (req, res) => {
       DBCC CHECKIDENT ('LOPHOCPHAN', RESEED, @MaxID);
     `);
 
-    res.status(200).json({ id: parseInt(id), message: "Xóa lớp học phần thành công" });
+    res
+      .status(200)
+      .json({ id: parseInt(id), message: "Xóa lớp học phần thành công" });
   } catch (err) {
     console.error("Lỗi khi xóa lớp học phần:", err);
     res.status(500).json({ message: "Không thể xóa lớp học phần" });

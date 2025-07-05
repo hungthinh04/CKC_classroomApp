@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Button, Alert, StyleSheet } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BASE_URL } from "@/constants/Link";
 
 export default function MoiGiangVienScreen() {
   const { maLHP } = useLocalSearchParams();
@@ -15,7 +16,7 @@ export default function MoiGiangVienScreen() {
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const res = await fetch(`http://192.168.1.104:3000/lophocphan/${maLHP}/add-sinhvien`, {
+      const res = await fetch(`${BASE_URL}/lophocphan/${maLHP}/add-sinhvien`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

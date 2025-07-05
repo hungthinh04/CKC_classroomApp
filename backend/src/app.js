@@ -28,6 +28,7 @@ app.use('/api', userRoutes);
 // app.use('/api', baivietRoutes);
 app.use('/api', require('./routes/giangvien'));
 app.use('/admin', adminRoutes);
+app.use("/sinhvien", require("./routes/sinhvien"));
 
 app.use('/baiviet', require('./routes/baiviet'));
 app.use('/lophocphan', require('./routes/lopHocPhan'));

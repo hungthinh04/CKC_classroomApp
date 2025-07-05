@@ -1,4 +1,7 @@
+const { BASE_URL } = require("../../constants/Link");
+// import { BASE_URL } from '@/constants/Link';
 const { pool, sql } = require("../config/db");
+
 
 exports.getBaiVietByLHP = async (req, res) => {
   const maLHP = req.params.id;
@@ -221,7 +224,7 @@ exports.nopBai = async (req, res) => {
 `);
 
       MaFile = fileResult.recordset[0].ID;
-      LienKet = `http://192.168.1.104:3000${filePath}`;
+      LienKet = `/uploads/${filename}`;
     }
 
     // 💾 Lưu bài nộp
@@ -249,6 +252,40 @@ exports.nopBai = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi nộp bài" });
   }
 };
+
+exports.getBaiNopByBaiViet = async (req, res) => {
+  const { maBaiViet } = req.params; // ID của bài viết (bài tập)
+
+  try {
+    const result = await pool.request()
+      .input("MaBaiViet", sql.Int, maBaiViet) // Truyền ID bài viết vào câu truy vấn
+      .query(`
+        SELECT 
+          sn.ID,
+          sn.MaSV, 
+          sn.LienKet, 
+          sn.VanBan, 
+          sn.NgayNop,
+          sv.HoTen AS sinhVienHoTen,
+          bv.TieuDe AS baiVietTieuDe
+        FROM SINHVIEN_NOPBAI sn
+        JOIN SINHVIEN sv ON sn.MaSV = sv.ID
+        JOIN BAIVIET bv ON sn.MaBaiViet = bv.ID
+        WHERE sn.MaBaiViet = @MaBaiViet
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy bài đã nộp cho bài tập này" });
+    }
+
+    res.json(result.recordset); // Trả về danh sách bài nộp
+  } catch (err) {
+    console.error("❌ Lỗi khi lấy bài nộp:", err);
+    res.status(500).json({ message: "Lỗi khi lấy bài nộp" });
+  }
+};
+
+
 exports.getBaiVietById = async (req, res) => {
   const { id } = req.params;
 
@@ -280,7 +317,7 @@ exports.getBaiVietById = async (req, res) => {
 
     res.json({
       ...data,
-      fileUrl: data.fileUrl ? `http://192.168.1.104:3000${data.fileUrl}` : null,
+      fileUrl: data.fileUrl ? `${BASE_URL}${data.fileUrl}` : null,
     });
   } catch (err) {
     console.error("❌ Lỗi khi lấy chi tiết bài viết:", err);

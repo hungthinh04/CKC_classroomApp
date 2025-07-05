@@ -27,7 +27,7 @@ router.get("/loai", controller.getBaiVietTheoLoai);
 router.get("/id/:id", controller.getBaiVietById);
 router.get("/:id", controller.getBaiVietByLHP);
 
-
+router.get('/bainop/bv/:maBaiViet', controller.getBaiNopByBaiViet);
 // router.post("/tao", auth, checkGiangVien, controller.createBaiViet);
 
 router.delete("/:id", auth, checkGiangVien, controller.deleteBaiViet);

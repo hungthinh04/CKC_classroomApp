@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Text, TextInput, View } from "react-native";
-
+import { BASE_URL } from "@/constants/Link";
 export default function CauHoiBlock({ baiViet }) {
   const [text, setText] = useState("");
   const [isNop, setIsNop] = useState(false);
