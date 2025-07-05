@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useAuth } from "../../../stores/useAuth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { BASE_URL } from "@/constants/Link";
 type LopHocPhan = {
   id: number;
   tenLHP: string;
@@ -24,7 +24,7 @@ type LopHocPhan = {
 };
 
 export default function HomeScreen() {
-  const { user, logout,checkLogin } = useAuth();
+  const { user, logout, checkLogin } = useAuth();
   const [lophocphan, setLophocphan] = useState<LopHocPhan[]>([]);
   const navigation = useNavigation();
 
@@ -34,35 +34,40 @@ export default function HomeScreen() {
   };
 
   const fetchLHP = async () => {
-    try {
-      if (!user?.id) return;
+  try {
+    if (!user?.id) return;
 
-      const token = await AsyncStorage.getItem("token");
-      const res = await fetch(
-        `http://192.168.1.104:3000/api/giangvien/${user.id}/lophocphan`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const data = await res.json();
-      const mapped = data.map((item: any) => ({
-        id: item.ID,
-        tenLHP: item.TenLHP,
-        hocKy: item.HocKy,
-        namHoc: item.NamHoc,
-        maGV: item.MaGV,
-        tenGV: item.TenGV || item.TenMH || "",
-        tenMH: item.TenMH || "",
-        maLop: item.MaLop || "",
-      }));
-      setLophocphan(mapped);
-    } catch (error) {
-      console.error("Fetch LHP error:", error);
-    }
-  };
+    const token = await AsyncStorage.getItem("token");
+    console.log(user, "User data in HomeScreen")
+    const isGV = user.role === 1;
+    const endpoint = isGV
+      ? `/api/giangvien/${user.id}/lophocphan`
+      : `/api/sinhvien/${user.id}/lophocphan`;
+
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await res.json();
+    const mapped = data.map((item: any) => ({
+      id: item.ID,
+      tenLHP: item.TenLHP,
+      hocKy: item.HocKy,
+      namHoc: item.NamHoc,
+      maGV: item.MaGV,
+      tenGV: item.TenGV || item.TenMH || "",
+      tenMH: item.TenMH || "",
+      maLop: item.MaLop || "",
+    }));
+    setLophocphan(mapped);
+  } catch (error) {
+    console.error("Fetch LHP error:", error);
+  }
+};
+
 
   useEffect(() => {
     const init = async () => {
@@ -96,7 +101,9 @@ export default function HomeScreen() {
           <Text style={{ fontWeight: "500" }}>CKC</Text> Classroom
         </Text>
         <View style={styles.avatar}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>{getInitial()}</Text>
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>
+            {getInitial()}
+          </Text>
         </View>
         <Ionicons
           name="ellipsis-vertical"
@@ -130,7 +137,8 @@ export default function HomeScreen() {
               style={styles.card}
               onPress={() =>
                 router.push({
-                  pathname: "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
+                  pathname:
+                    "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
                   params: { id: cls.id.toString(), tenLHP: cls.tenLHP },
                 })
               }

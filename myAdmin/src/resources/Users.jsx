@@ -15,6 +15,7 @@ export const UserList = () => (
     <Datagrid rowClick="edit">
       <TextField source="MaNguoiDung" label="Mã Người Dùng" />
       <TextField source="Email" label="Email" />
+      <TextField source="HoTen" label="Họ Tên" />
       <TextField source="MatKhau" label="Mật Khẩu" />
       <TextField source="Quyen" label="Quyền" />
       <TextField source="TrangThai" label="Trạng Thái" />
@@ -30,6 +31,7 @@ export const UserEdit = () => (
       <TextInput source="maNguoiDung" label="Mã Người Dùng" readOnly  />
       <TextInput source="email" label="Email" />
       <TextInput source="matKhau" label="Mật Khẩu" />
+      <TextInput source="HoTen" label="Họ Tên" />
       <TextInput source="quyen" label="Quyền" />
       <TextInput source="trangThai" label="Trạng Thái" />
     </SimpleForm>

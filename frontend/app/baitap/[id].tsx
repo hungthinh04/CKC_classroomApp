@@ -11,11 +11,13 @@ import {
   Alert,
   TextInput,
   Image,
+  FlatList,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system";
 import axios from "axios";
+import { BASE_URL } from "@/constants/Link";
 
 export default function ChiTietBaiTapScreen() {
   const { id } = useLocalSearchParams(); // ID của bài viết
@@ -23,13 +25,25 @@ export default function ChiTietBaiTapScreen() {
   const [tep, setTep] = useState<any>(null); // File đã chọn
   const [nhanXet, setNhanXet] = useState(""); // Nhận xét
   const [loading, setLoading] = useState(false); // Trạng thái loading khi nộp bài
-
+  const [baiNop, setBaiNop] = useState<any[]>([]);
   // Lấy thông tin bài tập từ backend
   useEffect(() => {
-    fetch(`http://192.168.1.104:3000/baiviet/chitiet/${id}`)
+    fetch(`${BASE_URL}/baiviet/chitiet/${id}`)
       .then((res) => res.json())
       .then((data) => setBv(data))
       .catch((err) => console.error("❌ Lỗi khi lấy bài viết:", err));
+  }, [id]);
+
+  useEffect(() => {
+    axios
+      .get(`${BASE_URL}/baiviet/bainop/bv/${id}`)
+      .then((res) => {
+        setBaiNop(res.data); // Cập nhật danh sách bài nộp
+      })
+      .catch((err) => {
+        console.error("❌ Lỗi khi lấy bài nộp:", err);
+        Alert.alert("Lỗi", "Không thể tải bài nộp");
+      });
   }, [id]);
 
   // Chọn tệp
@@ -51,7 +65,7 @@ export default function ChiTietBaiTapScreen() {
 
         setTep({
           ...asset,
-          uri: newPath, // ✅ uri chuẩn, luôn file://
+          uri: newPath,
           name: fileName,
         });
       } catch (err) {
@@ -87,27 +101,23 @@ export default function ChiTietBaiTapScreen() {
     try {
       const token = await AsyncStorage.getItem("token");
 
-      const res = await axios.post(
-        "http://192.168.1.104:3000/baiviet/nopbai",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await axios.post(`${BASE_URL}/baiviet/nopbai`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (res.status === 201) {
         const fileUrl = res.data.fileUrl
-          ? `http://192.168.1.104:3000${res.data.fileUrl}`
+          ? `${BASE_URL}${res.data.fileUrl}`
           : null;
         Alert.alert("✅ Nộp bài thành công", "", [
           {
             text: "Ok",
             onPress: () => {
               // Tuỳ bạn, hoặc chuyển trang
-             router.back();
+              router.back();
             },
           },
         ]);
@@ -148,20 +158,16 @@ export default function ChiTietBaiTapScreen() {
     try {
       const token = await AsyncStorage.getItem("token");
 
-      const res = await axios.post(
-        "http://192.168.1.104:3000/baiviet/nopbai",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await axios.post(`${BASE_URL}/baiviet/nopbai`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (res.status === 201) {
         const fileUrl = res.data.fileUrl
-          ? `http://192.168.1.104:3000${res.data.fileUrl}`
+          ? `${BASE_URL}${res.data.fileUrl}`
           : null;
 
         Alert.alert(
@@ -173,10 +179,10 @@ export default function ChiTietBaiTapScreen() {
               onPress: () => {
                 // Tuỳ bạn, hoặc chuyển trang
                 router.replace({
-  pathname: "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
-  params: { id: bv.MaLHP?.toString() },
-});
-
+                  pathname:
+                    "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
+                  params: { id: bv.MaLHP?.toString() },
+                });
               },
             },
           ]
@@ -192,9 +198,7 @@ export default function ChiTietBaiTapScreen() {
 
   if (!bv) return null;
 
-  const fileUrl = bv.DuongDanFile
-    ? `http://192.168.1.104:3000${bv.DuongDanFile}`
-    : null;
+  const fileUrl = bv.DuongDanFile ? `${BASE_URL}${bv.DuongDanFile}` : null;
 
   return (
     <ScrollView style={styles.container}>
@@ -208,11 +212,9 @@ export default function ChiTietBaiTapScreen() {
       <View style={styles.metaBox}>
         {/* <Text style={styles.meta}>🧾 Mã: {bv.maBaiViet}</Text> */}
         <Text style={styles.meta}>🗓 Ngày tạo: {bv.ngayTao?.slice(0, 10)}</Text>
+        <Text style={styles.meta}>⏰ Hạn nộp: {bv.hanNop?.slice(0, 10)}</Text>
         <Text style={styles.meta}>
-          ⏰ Hạn nộp: {bv.hanNop?.slice(0, 10)}
-        </Text>
-        <Text style={styles.meta}>
-          👨‍🏫 GV: {bv.hoGV} {bv.tenGV}
+          👨‍🏫 GV: {bv.HoGV} {bv.TenGV}
         </Text>
       </View>
 
@@ -264,6 +266,28 @@ export default function ChiTietBaiTapScreen() {
           />
         </View>
       )}
+
+      <View style={styles.submissions}>
+        <Text style={styles.sectionTitle}>Danh sách bài nộp</Text>
+        <ScrollView>
+          {baiNop.map((item) => (
+            <View style={styles.card} key={item.ID}>
+              <Text style={styles.submissionTitle}>{item.sinhVienHoTen}</Text>
+              <Text style={styles.meta}>
+                Ngày nộp: {item.NgayNop.slice(0, 10)}
+              </Text>
+              {item.LienKet && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(`${BASE_URL}${item.LienKet}`)}
+                >
+                  <Text style={styles.link}>Mở bài đã nộp</Text>
+                </TouchableOpacity>
+              )}
+              {item.VanBan && <Text style={styles.comment}>{item.VanBan}</Text>}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
     </ScrollView>
   );
 }
@@ -314,5 +338,39 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: "#fff",
     textAlignVertical: "top",
+  },
+
+  submissions: {
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  card: {
+    padding: 12,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  submissionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  link: {
+    color: "#007bff",
+    marginTop: 6,
+  },
+  comment: {
+    fontSize: 14,
+    fontStyle: "italic",
+    marginTop: 6,
   },
 });

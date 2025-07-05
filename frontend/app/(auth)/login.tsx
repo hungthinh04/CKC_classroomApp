@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Button, Text, TextInput, View } from "react-native";
 import { useAuth } from "../../stores/useAuth";
+import { BASE_URL } from "@/constants/Link";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -10,7 +11,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://192.168.1.104:3000/api/auth", {
+      const res = await fetch(`${BASE_URL}/api/auth`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, matKhau }),

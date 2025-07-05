@@ -1,32 +1,25 @@
 const { pool, sql } = require("../config/db");
 
-// Lấy danh sách nhận xét theo bài viết
 exports.getCommentsByPostId = async (req, res) => {
-  const { id } = req.params;
-  const postId = parseInt(id);
-
-  if (isNaN(postId)) {
-    return res.status(400).json({ message: "ID bài viết không hợp lệ" });
-  }
+  const { id } = req.params;  // Lấy ID bài viết từ URL
 
   try {
     const result = await pool
       .request()
-      .input("MaBV", sql.Int, postId)
+      .input("MaBV", sql.Int, id)
       .query(`
-        SELECT 
-          n.ID, 
-          n.NoiDung, 
-          n.NgayTao,
-          COALESCE(sv.HoTen, gv.HoGV + ' ' + gv.TenGV, u.Email) AS TenNguoiDung
+        SELECT n.ID, n.NoiDung, n.NgayTao, u.HoTen
         FROM NHANXET n
         JOIN USERS u ON n.MaTK = u.ID
-        LEFT JOIN SINHVIEN sv ON sv.MaTK = u.ID
-        LEFT JOIN GIANGVIENN gv ON gv.MaTK = u.ID
         WHERE n.MaBV = @MaBV
         ORDER BY n.NgayTao DESC
       `);
 
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: "Chưa có nhận xét" });
+    }
+
+    // Trả về dữ liệu nhận xét
     res.json(result.recordset);
   } catch (err) {
     console.error("❌ Lỗi khi lấy nhận xét:", err);
@@ -34,33 +27,25 @@ exports.getCommentsByPostId = async (req, res) => {
   }
 };
 
-// Thêm nhận xét vào bài viết
 exports.postComment = async (req, res) => {
-  const { id } = req.params;
-  const { noiDung } = req.body;
-  const user = req.user; // middleware verifyToken
-  const postId = parseInt(id);
-
-  console.log("📥 postComment -> id:", id);
-  console.log("👤 user.id:", user?.id);
+  const { id } = req.params; // bài viết
+  const { noiDung, tenNguoiDung } = req.body; // Tên người bình luận và nội dung nhận xét
+  const user = req.user; // từ middleware verifyToken
 
   if (!noiDung?.trim()) {
     return res.status(400).json({ message: "Nội dung không được để trống" });
   }
 
-  if (isNaN(postId)) {
-    return res.status(400).json({ message: "ID bài viết không hợp lệ" });
-  }
-
   try {
     await pool
       .request()
-      .input("NoiDung", sql.NVarChar(sql.MAX), noiDung)
-      .input("MaBV", sql.Int, postId)
-      .input("MaTK", sql.Int, user.id)
+      .input("NoiDung", noiDung)
+      .input("MaBV", id)
+      .input("MaTK", user.id)
+      .input("TenNguoiDung", tenNguoiDung)
       .query(`
-        INSERT INTO NHANXET (NoiDung, MaBV, MaTK)
-        VALUES (@NoiDung, @MaBV, @MaTK)
+        INSERT INTO NHANXET (NoiDung, MaBV, MaTK, TenNguoiDung)
+        VALUES (@NoiDung, @MaBV, @MaTK, @TenNguoiDung)
       `);
 
     res.status(201).json({ message: "Đã thêm nhận xét" });

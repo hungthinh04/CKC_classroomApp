@@ -11,7 +11,7 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-
+import { BASE_URL } from "@/constants/Link";
 type User = {
   maSV: number;
   tenSV: string;
@@ -33,9 +33,7 @@ export default function PeopleScreen() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch(
-        `http://192.168.1.104:3000/lophocphan/thanhphan?maLHP=${id}`
-      );
+      const res = await fetch(`${BASE_URL}/lophocphan/thanhphan?maLHP=${id}`);
       const data = await res.json();
       setUsers(data.sinhViens || []);
       setGv(data.giangVien || null);
@@ -58,16 +56,13 @@ export default function PeopleScreen() {
         if (!email) return;
 
         try {
-          const res = await fetch(
-            `http://192.168.1.104:3000/lophocphan/${id}/add-${type}`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ email }),
-            }
-          );
+          const res = await fetch(`${BASE_URL}/lophocphan/${id}/add-${type}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }),
+          });
 
           const result = await res.json();
           if (res.ok) {
@@ -92,7 +87,7 @@ export default function PeopleScreen() {
         onPress: async () => {
           try {
             const res = await fetch(
-              `http://192.168.1.104:3000/lophocphan/${id}/remove-sinhvien`,
+              `${BASE_URL}/lophocphan/${id}/remove-sinhvien`,
               {
                 method: "DELETE",
                 headers: {

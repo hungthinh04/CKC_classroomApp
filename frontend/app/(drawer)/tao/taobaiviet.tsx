@@ -4,6 +4,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BASE_URL } from "@/constants/Link";
 
 export default function TaoBaiVietScreen() {
   const { maLHP } = useLocalSearchParams();
@@ -12,30 +13,30 @@ export default function TaoBaiVietScreen() {
   const [tep, setTep] = useState<any>(null); // ✅ dùng biến này duy nhất
 
   const chonTep = async () => {
-  const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
-  if (!res.canceled && res.assets?.length > 0) {
-    const asset = res.assets[0];
-    const originalUri = asset.uri;
-    const fileName = asset.name || `tep-${Date.now()}`;
-    const newPath = FileSystem.documentDirectory + encodeURIComponent(fileName);
+    const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
+    if (!res.canceled && res.assets?.length > 0) {
+      const asset = res.assets[0];
+      const originalUri = asset.uri;
+      const fileName = asset.name || `tep-${Date.now()}`;
+      const newPath =
+        FileSystem.documentDirectory + encodeURIComponent(fileName);
 
-    try {
-      await FileSystem.copyAsync({ from: originalUri, to: newPath });
+      try {
+        await FileSystem.copyAsync({ from: originalUri, to: newPath });
 
-      // console.log("✅ Đã copy xong file:", newPath);
+        // console.log("✅ Đã copy xong file:", newPath);
 
-      setTep({
-        ...asset,
-        uri: newPath,
-        name: fileName,
-      });
-    } catch (err) {
-      console.error("❌ Lỗi khi copy file:", err);
-      Alert.alert("Lỗi", "Không thể xử lý tệp đính kèm");
+        setTep({
+          ...asset,
+          uri: newPath,
+          name: fileName,
+        });
+      } catch (err) {
+        console.error("❌ Lỗi khi copy file:", err);
+        Alert.alert("Lỗi", "Không thể xử lý tệp đính kèm");
+      }
     }
-  }
-};
-
+  };
 
   const handleSubmit = async () => {
     if (!noiDung) {
@@ -62,12 +63,12 @@ export default function TaoBaiVietScreen() {
 
     try {
       const token = await AsyncStorage.getItem("token");
-    
-      const res = await fetch("http://192.168.1.104:3000/baiviet/tao", {
+
+      const res = await fetch(`${BASE_URL}/baiviet/tao`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`, // ❌ Không set Content-Type
-        "Content-Type": "multipart/form-data",
+          "Content-Type": "multipart/form-data",
         },
         body: formData,
       });
@@ -90,8 +91,6 @@ export default function TaoBaiVietScreen() {
     }
   };
 
-  
-
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Thông báo gì đó cho lớp</Text>
@@ -109,11 +108,10 @@ export default function TaoBaiVietScreen() {
 
       <View style={{ marginTop: 20 }}>
         <Button
-  title="📤 Đăng bài"
-  onPress={handleSubmit}
-  disabled={!noiDung || (tep && !tep.uri.startsWith("file://"))}
-/>
-
+          title="📤 Đăng bài"
+          onPress={handleSubmit}
+          disabled={!noiDung || (tep && !tep.uri.startsWith("file://"))}
+        />
       </View>
     </View>
   );
