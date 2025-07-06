@@ -275,8 +275,8 @@ exports.getBaiNopByBaiViet = async (req, res) => {
       `);
 
     if (result.recordset.length === 0) {
-      return res.status(404).json({ message: "Không tìm thấy bài đã nộp cho bài tập này" });
-    }
+  return res.json([]); // Trả về mảng rỗng thay vì 404
+}
 
     res.json(result.recordset); // Trả về danh sách bài nộp
   } catch (err) {

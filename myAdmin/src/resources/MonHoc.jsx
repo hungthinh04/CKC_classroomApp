@@ -10,11 +10,13 @@ import {
   TextInput,
   NumberInput,
   Create,
+  AutocompleteInput,
+  ReferenceInput,
 } from "react-admin";
 
 export const MonHocList = () => (
   <List>
-    <Datagrid rowClick="edit">
+    <Datagrid rowClick="edit" >
       <TextField source="id" label="ID" />
       <TextField source="TenMH" label="Tên môn học" />
       <TextField source="TinChi" label="Tín chỉ" />
@@ -30,17 +32,22 @@ export const MonHocEdit = () => (
       <TextInput source="id" disabled />
       <TextInput source="tenMH" label="Tên môn học" />
       <NumberInput source="tinChi" label="Tín chỉ" />
-      <NumberInput source="maBM" label="Mã bộ môn" />
+      <ReferenceInput source="maBM" reference="bomon" label="Bộ môn" perPage={100}>
+        <AutocompleteInput optionText="TenBM" />
+      </ReferenceInput>
     </SimpleForm>
   </Edit>
 );
 
+// Form tạo môn học mới
 export const MonHocCreate = () => (
   <Create>
     <SimpleForm>
       <TextInput source="tenMH" label="Tên môn học" />
       <NumberInput source="tinChi" label="Tín chỉ" />
-      <NumberInput source="maBM" label="Mã bộ môn" />
+      <ReferenceInput source="maBM" reference="bomon" label="Bộ môn" perPage={100}>
+        <AutocompleteInput optionText="TenBM" />
+      </ReferenceInput>
     </SimpleForm>
   </Create>
 );

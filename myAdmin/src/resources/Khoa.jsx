@@ -1,9 +1,10 @@
 // src/resources/Khoa.js
-import { List, Datagrid, TextField, EditButton, Edit, SimpleForm, TextInput, Create } from 'react-admin';
+import { List, Datagrid, TextField, EditButton, Edit, SimpleForm, TextInput, Create, ReferenceInput, AutocompleteInput } from 'react-admin';
 
 export const KhoaList = () => (
   <List>
     <Datagrid rowClick="edit">
+     <TextField source="stt" label="STT" />
       <TextField source="MaKhoa" label="Mã Khoa" />
       <TextField source="TenKhoa" label="Tên Khoa" />
       <EditButton />
@@ -23,7 +24,10 @@ export const KhoaEdit = () => (
 export const KhoaCreate = () => (
   <Create>
     <SimpleForm>
-      <TextInput source="maKhoa" label="Mã Khoa" />
+      <ReferenceInput source="maKhoa" reference="khoa" label="Khoa" perPage={100}>
+  <AutocompleteInput optionText="TenKhoa" />
+</ReferenceInput>
+
       <TextInput source="tenKhoa" label="Tên Khoa" />
     </SimpleForm>
   </Create>

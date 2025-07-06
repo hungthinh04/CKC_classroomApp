@@ -196,18 +196,27 @@ exports.getSinhVienById = async (req, res) => {
 
 exports.getAllKhoa = async (req, res) => {
   try {
-    const result = await pool.request().query("SELECT * FROM KHOA");
-    const total = result.recordset.length;
+   const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
+const [start, end] = range;
 
-    res.set("Content-Range", `khoa 0-${total - 1}/${total}`);
-    res.set("Access-Control-Expose-Headers", "Content-Range");
+const result = await pool.request().query("SELECT * FROM KHOA");
 
-    const data = result.recordset.map((item) => ({
-      ...item,
-      id: item.ID,
-    }));
+const sliced = result.recordset.slice(start, end + 1);
+const total = result.recordset.length;
 
-    res.json(data);
+res.set("Content-Range", `khoa ${start}-${end}/${total}`);
+res.set("Access-Control-Expose-Headers", "Content-Range");
+
+const data = sliced.map((item, index) => ({
+  ...item,
+  id: item.ID,
+  stt: start + index + 1,
+}));
+
+res.json(data);
+
+    
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi truy vấn khoa" });
@@ -327,10 +336,11 @@ exports.getAllMonHoc = async (req, res) => {
 
 exports.getAllBoMon = async (req, res) => {
   try {
-    const sortParam = req.query.sort
-      ? JSON.parse(req.query.sort)
-      : ["ID", "ASC"];
+    const allowedSortFields = ["ID", "TenBM", "MaKhoa"];
+    const sortParam = req.query.sort ? JSON.parse(req.query.sort) : ["ID", "ASC"];
     const [sortField, sortOrder] = sortParam;
+
+    const sortFieldSafe = allowedSortFields.includes(sortField) ? sortField : "ID";
 
     const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
     const [start, end] = range;
@@ -340,10 +350,11 @@ exports.getAllBoMon = async (req, res) => {
 
     const result = await pool
       .request()
-      .input("TenBM", sql.NVarChar, `%${tenBM}%`).query(`
+      .input("TenBM", sql.NVarChar, `%${tenBM}%`)
+      .query(`
         SELECT * FROM BOMON
         WHERE TenBM LIKE @TenBM
-        ORDER BY ${sortField} ${sortOrder.toUpperCase()}
+        ORDER BY ${sortFieldSafe} ${sortOrder.toUpperCase()}
       `);
 
     const sliced = result.recordset.slice(start, end + 1);
@@ -360,10 +371,11 @@ exports.getAllBoMon = async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Lỗi truy vấn bộ môn:", err);
     res.status(500).json({ message: "Lỗi truy vấn bộ môn" });
   }
 };
+
 
 exports.addKhoa = async (req, res) => {
   console.log("Dữ liệu nhận được:", req.body);

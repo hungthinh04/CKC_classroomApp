@@ -20,22 +20,31 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "@/constants/Link";
 
 export default function BaiVietDetail() {
-  const { id } = useLocalSearchParams(); // Lấy ID từ tham số của URL
+  const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const navigation = useNavigation();
   const [baiViet, setBaiViet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [editingComment, setEditingComment] = useState<any>(null); // 👉 comment đang sửa
 
   const isImage = (url: string) => url.match(/\.(jpeg|jpg|png|gif|webp)$/i);
+
+  const fetchComments = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/baiviet/${baiViet.ID}/comments`);
+      const data = await res.json();
+      setComments(data);
+    } catch (err) {
+      console.error("❌ Lỗi lấy nhận xét:", err);
+    }
+  };
 
   useEffect(() => {
     fetch(`${BASE_URL}/baiviet/id/${id}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log("Dữ liệu bài viết:", data);
-
         setBaiViet(data);
         setLoading(false);
       })
@@ -47,14 +56,7 @@ export default function BaiVietDetail() {
 
   useEffect(() => {
     if (baiViet?.ID) {
-      fetch(`${BASE_URL}/baiviet/${baiViet.ID}/comments`)
-        .then((res) => res.json())
-
-        .then((data) => {
-          console.log("Dữ liệu nhận xét:", data); // Kiểm tra dữ liệu nhận được
-          setComments(data);
-        })
-        .catch((err) => console.error("❌ Lỗi lấy comments:", err));
+      fetchComments();
     }
   }, [baiViet?.ID]);
 
@@ -66,30 +68,101 @@ export default function BaiVietDetail() {
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const postId = parseInt(String(baiViet?.ID));
-      console.log(postId);
-      if (!postId) return;
+      if (!token) {
+        Alert.alert("Vui lòng đăng nhập lại");
+        return;
+      }
 
-      const res = await fetch(`${BASE_URL}/baiviet/${postId}/comment`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ noiDung: newComment }),
-      });
-      console.log("Gửi nhận xét:", baiViet.ID, newComment, token);
+      if (editingComment) {
+        // 👉 Cập nhật comment
+        const res = await fetch(`${BASE_URL}/api/comments/${editingComment.ID}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ noiDung: newComment }),
+        });
 
-      if (res.ok) {
-        setNewComment("");
-        const fresh = await fetch(`${BASE_URL}/baiviet/${baiViet.ID}/comments`);
-        setComments(await fresh.json());
+        if (res.ok) {
+          setComments((prev) =>
+            prev.map((c) =>
+              c.ID === editingComment.ID ? { ...c, NoiDung: newComment } : c
+            )
+          );
+          setNewComment("");
+          setEditingComment(null);
+        } else {
+          Alert.alert("❌ Lỗi", "Không thể cập nhật nhận xét");
+        }
       } else {
-        Alert.alert("❌ Lỗi", "Không thể gửi nhận xét");
+        // 👉 Thêm comment mới
+        const postId = parseInt(String(baiViet?.ID));
+        const res = await fetch(`${BASE_URL}/baiviet/${postId}/comment`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ noiDung: newComment }),
+        });
+
+        if (res.ok) {
+          setNewComment("");
+          fetchComments();
+        } else {
+          Alert.alert("❌ Lỗi", "Không thể gửi nhận xét");
+        }
       }
     } catch (err) {
-      console.error("❌ Gửi nhận xét lỗi:", err);
+      console.error("❌ Lỗi gửi nhận xét:", err);
     }
+  };
+
+  const handleDelete = async (commentId: number) => {
+    Alert.alert("Xác nhận xoá", "Bạn có chắc muốn xoá nhận xét này?", [
+      {
+        text: "Huỷ",
+        style: "cancel",
+      },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem("token");
+            if (!token) {
+              Alert.alert("Vui lòng đăng nhập lại");
+              return;
+            }
+
+            const res = await fetch(`${BASE_URL}/api/comments/${commentId}`, {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            if (res.ok) {
+              setComments((prev) => prev.filter((c) => c.ID !== commentId));
+              if (editingComment?.ID === commentId) {
+                setEditingComment(null);
+                setNewComment("");
+              }
+            } else {
+              Alert.alert("Lỗi", "Không thể xoá nhận xét");
+            }
+          } catch (err) {
+            console.error("❌ Lỗi khi xoá:", err);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEdit = (comment) => {
+    setNewComment(comment.NoiDung);
+    setEditingComment(comment);
   };
 
   if (loading) {
@@ -100,7 +173,6 @@ export default function BaiVietDetail() {
     );
   }
 
-  console.log(comments);
   if (!baiViet) {
     return (
       <View style={styles.center}>
@@ -108,6 +180,7 @@ export default function BaiVietDetail() {
       </View>
     );
   }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -148,11 +221,19 @@ export default function BaiVietDetail() {
         keyExtractor={(item) => item.ID.toString()}
         renderItem={({ item }) => (
           <View style={styles.commentItem}>
-            <Text style={styles.commentUser}>
-              {item.Quyen === 1
-                ? `${item.TenNguoiDung} (Giảng viên)` // Nếu là giảng viên, hiển thị "Giảng viên"
-                : `${item.TenNguoiDung} (Sinh viên)`}
-            </Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={styles.commentUser}>{item.HoTen}</Text>
+              {item.MaTK === user.id && (
+                <View style={styles.commentActions}>
+                  <TouchableOpacity onPress={() => handleEdit(item)}>
+                    <Text style={styles.editBtn}>Sửa</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDelete(item.ID)}>
+                    <Text style={styles.deleteBtn}>Xoá</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
             <Text style={styles.commentText}>{item.NoiDung}</Text>
           </View>
         )}
@@ -173,8 +254,22 @@ export default function BaiVietDetail() {
           style={styles.commentInput}
         />
         <TouchableOpacity onPress={submitComment}>
-          <Text style={styles.sendBtn}>Gửi</Text>
+          <Text style={styles.sendBtn}>
+            {editingComment ? "Cập nhật" : "Gửi"}
+          </Text>
         </TouchableOpacity>
+        {editingComment && (
+          <TouchableOpacity
+            onPress={() => {
+              setEditingComment(null);
+              setNewComment("");
+            }}
+          >
+            <Text style={[styles.sendBtn, { color: "#f87171", marginLeft: 12 }]}>
+              Huỷ
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -221,7 +316,21 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   sendBtn: {
-    fontSize: 20,
+    fontSize: 16,
     color: "#4ade80",
+  },
+  commentActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  editBtn: {
+    color: "#60a5fa",
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  deleteBtn: {
+    color: "#f87171",
+    marginLeft: 8,
+    fontSize: 14,
   },
 });

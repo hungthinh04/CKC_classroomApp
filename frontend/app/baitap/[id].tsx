@@ -31,7 +31,7 @@ export default function ChiTietBaiTapScreen() {
     fetch(`${BASE_URL}/baiviet/chitiet/${id}`)
       .then((res) => res.json())
       .then((data) => setBv(data))
-      .catch((err) => console.error("❌ Lỗi khi lấy bài viết:", err));
+      .catch((err) => console.error("❌ Lỗi khi lấy bài tập:", err));
   }, [id]);
 
   useEffect(() => {

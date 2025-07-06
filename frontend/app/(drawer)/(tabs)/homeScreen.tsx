@@ -45,13 +45,21 @@ export default function HomeScreen() {
       : `/api/sinhvien/${user.id}/lophocphan`;
 
     const res = await fetch(`${BASE_URL}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  },
+});
 
-    const data = await res.json();
+const contentType = res.headers.get("content-type");
+if (!res.ok || !contentType?.includes("application/json")) {
+  const text = await res.text();
+  console.error("❌ Lỗi từ server:", text);
+  throw new Error(`Unexpected response: ${text}`);
+}
+
+const data = await res.json();
+
     const mapped = data.map((item: any) => ({
       id: item.ID,
       tenLHP: item.TenLHP,
