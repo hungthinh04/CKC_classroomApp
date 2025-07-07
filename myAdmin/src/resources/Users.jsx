@@ -8,35 +8,58 @@ import {
   SimpleForm,
   TextInput,
   Create,
+  SelectInput,
+  FunctionField,
 } from "react-admin";
 
+// List Users
 export const UserList = () => (
   <List>
     <Datagrid rowClick="edit">
-      <TextField source="MaNguoiDung" label="Mã Người Dùng" />
-      <TextField source="Email" label="Email" />
-      <TextField source="HoTen" label="Họ Tên" />
-      <TextField source="MatKhau" label="Mật Khẩu" />
-      <TextField source="Quyen" label="Quyền" />
-      <TextField source="TrangThai" label="Trạng Thái" />
+      <FunctionField label="STT" render={(record, index) => index + 1} />
+      <TextField source="maNguoiDung" label="Mã Người Dùng" />
+      <TextField source="email" label="Email" />
+      <TextField source="hoTen" label="Họ Tên" />
+      <TextField source="matKhau" label="Mật Khẩu" />
+      <TextField source="quyen" label="Quyền" />
+      <TextField source="trangThai" label="Trạng Thái" />
       <EditButton />
     </Datagrid>
   </List>
 );
 
-
+// Edit User
 export const UserEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="maNguoiDung" label="Mã Người Dùng" readOnly  />
+      <TextInput source="maNguoiDung" label="Mã Người Dùng"  />
       <TextInput source="email" label="Email" />
       <TextInput source="matKhau" label="Mật Khẩu" />
-      <TextInput source="HoTen" label="Họ Tên" />
-      <TextInput source="quyen" label="Quyền" />
-      <TextInput source="trangThai" label="Trạng Thái" />
+      <TextInput source="hoTen" label="Họ Tên" />
+      <SelectInput
+        source="quyen"
+        label="Quyền"
+        choices={[
+          { id: 0, name: "Sinh viên" },
+          { id: 1, name: "Giảng viên" },
+          { id: 2, name: "Admin" },
+        ]}
+      />
+      <SelectInput
+        source="trangThai"
+        label="Trạng Thái"
+        choices={[
+          { id: 1, name: "Đang Học" },
+          { id: 0, name: "Bị Đình Chỉ" },
+          { id: 2, name: "Đã Tốt Nghiệp" },
+        ]}
+      />
     </SimpleForm>
   </Edit>
 );
+
+// (Nếu cần create thì cũng dùng camelCase tương tự)
+
 
 // export const UserCreate = () => (
 //   <Create>

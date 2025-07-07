@@ -17,7 +17,7 @@ import {
 export const MonHocList = () => (
   <List>
     <Datagrid rowClick="edit" >
-      <TextField source="id" label="ID" />
+      {/* <TextField source="id" label="ID" /> */}
       <TextField source="TenMH" label="Tên môn học" />
       <TextField source="TinChi" label="Tín chỉ" />
       <TextField source="MaBM" label="Mã bộ môn" />
@@ -29,11 +29,11 @@ export const MonHocList = () => (
 export const MonHocEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="id" disabled />
+      {/* <TextInput source="id" disabled /> */}
       <TextInput source="tenMH" label="Tên môn học" />
       <NumberInput source="tinChi" label="Tín chỉ" />
       <ReferenceInput source="maBM" reference="bomon" label="Bộ môn" perPage={100}>
-        <AutocompleteInput optionText="TenBM" />
+        <AutocompleteInput optionText="TenBM" label="Tên Bộ Môn"/>
       </ReferenceInput>
     </SimpleForm>
   </Edit>

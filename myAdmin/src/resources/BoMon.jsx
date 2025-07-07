@@ -32,10 +32,10 @@ export const BoMonList = () => (
 export const BoMonEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="id" disabled />
+      {/* <TextInput source="id" disabled /> */}
       <TextInput source="tenBM" label="Tên Bộ Môn" />
       <ReferenceInput source="maKhoa" reference="khoa" label="Khoa">
-        <AutocompleteInput optionText="TenKhoa" />
+        <AutocompleteInput optionText="TenKhoa" label="Khoa"/>
       </ReferenceInput>
     </SimpleForm>
   </Edit>
@@ -46,7 +46,7 @@ export const BoMonCreate = () => (
     <SimpleForm>
       <TextInput source="tenBM" label="Tên Bộ Môn" />
       <ReferenceInput source="maKhoa" reference="khoa" label="Khoa">
-        <AutocompleteInput optionText="TenKhoa" />
+        <AutocompleteInput optionText="TenKhoa" label="Khoa"/>
       </ReferenceInput>
     </SimpleForm>
   </Create>

@@ -15,7 +15,7 @@ export const KhoaList = () => (
 export const KhoaEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="maKhoa" label="Mã Khoa" />
+      <TextInput source="maKhoa" label="Mã Khoa" readOnly />
       <TextInput source="tenKhoa" label="Tên Khoa" />
     </SimpleForm>
   </Edit>
@@ -24,10 +24,9 @@ export const KhoaEdit = () => (
 export const KhoaCreate = () => (
   <Create>
     <SimpleForm>
-      <ReferenceInput source="maKhoa" reference="khoa" label="Khoa" perPage={100}>
-  <AutocompleteInput optionText="TenKhoa" />
-</ReferenceInput>
+      
 
+      <TextInput source="maKhoa" label="Mã Khoa" />
       <TextInput source="tenKhoa" label="Tên Khoa" />
     </SimpleForm>
   </Create>

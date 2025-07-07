@@ -36,10 +36,11 @@ exports.getUserById = async (req, res) => {
     if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
 
     res.json({
-      id: user.ID, // key quan trọng!
+      id: user.id,
       maNguoiDung: user.MaNguoiDung,
       email: user.Email,
       matKhau: user.MatKhau,
+      hoTen: user.HoTen,
       quyen: user.Quyen,
       trangThai: user.TrangThai,
     });
@@ -252,16 +253,20 @@ exports.getAllLopHoc = async (req, res) => {
     res.set("Access-Control-Expose-Headers", "Content-Range");
 
     const data = result.recordset.map((item) => ({
-      ...item,
-      id: item.ID,
-    }));
+  id: item.ID,
+  maLop: item.MaLop,
+  tenLP: item.TenLP,
+  maBM: item.MaBM,
+}));
+
 
     res.json(data);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi truy vấn khoa" });
   }
-};exports.getAllUsers = async (req, res) => {
+};
+exports.getAllUsers = async (req, res) => {
   try {
     const result = await pool.request().query(`
       SELECT 
@@ -283,9 +288,15 @@ exports.getAllLopHoc = async (req, res) => {
     res.set("Access-Control-Expose-Headers", "Content-Range");
 
     const data = result.recordset.map((item) => ({
-      ...item,
-      id: item.ID,
-    }));
+  id: item.ID,
+  maNguoiDung: item.MaNguoiDung,
+  email: item.Email,
+  matKhau: item.MatKhau,
+  hoTen: item.HoTen,
+  quyen: item.Quyen,
+  trangThai: item.TrangThai,
+}));
+
 
     res.json(data);
   } catch (err) {
@@ -733,49 +744,74 @@ exports.getAllGiangVien = async (req, res) => {
 //       .json({ message: "Không thể thêm giảng viên hoặc sinh viên" });
 //   }
 // };
+const removeDiacritics = (str) => {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
 exports.addGiangVien = async (req, res) => {
   const {
-    msgv,
     hoGV,
     tenGV,
     ngaySinh,
     gioiTinh,
     sdt,
-    maTK,
-    cccd,
     maBM,
+    cccd,
     diaChi,
     trangThai,
-    maGiangVien,
   } = req.body;
 
+  // Loại bỏ dấu trong tên giảng viên để tạo email mà không có dấu chấm
+  const email = `${removeDiacritics(hoGV.toLowerCase().replace(" ", ""))}${removeDiacritics(tenGV.toLowerCase().replace(" ", ""))}@ckc.vn`;
+
   try {
-    const result = await pool
+    const userResult = await pool
       .request()
-      .input("MSGV", sql.Char(10), msgv) // Matching the field name correctly here
+      .input("Email", sql.NVarChar(100), email)
+      .input("MatKhau", sql.NVarChar(255), "defaultPassword")
+      .input("Quyen", sql.Int, 1) // Giảng viên
+      .input("TrangThai", sql.SmallInt, 1) // Hoạt động
+      .query(`
+        INSERT INTO USERS (Email, MatKhau, Quyen, TrangThai)
+        VALUES (@Email, @MatKhau, @Quyen, @TrangThai);
+        SELECT SCOPE_IDENTITY() AS MaTK;
+      `);
+
+    const maTK = userResult.recordset[0].MaTK; // Lấy MaTK từ kết quả
+
+    const maGiangVien = `GV${maTK.toString().padStart(3, '0')}`;  // Tạo mã giảng viên từ MaTK
+
+    const giangVienResult = await pool
+      .request()
+      .input("MSGV", sql.Char(10), `gv${maTK}`)  // Tạo MSGV từ MaTK
       .input("HoGV", sql.NVarChar(255), hoGV)
       .input("TenGV", sql.NVarChar(255), tenGV)
       .input("NgaySinh", sql.DateTime, ngaySinh)
       .input("GioiTinh", sql.SmallInt, gioiTinh)
       .input("SDT", sql.VarChar(20), sdt)
-      .input("MaTK", sql.Int, maTK)
+      .input("MaTK", sql.Int, maTK)  // Liên kết với tài khoản người dùng
       .input("CCCD", sql.NVarChar(20), cccd)
       .input("MaBM", sql.Int, maBM)
       .input("DiaChi", sql.Text, diaChi)
       .input("TrangThai", sql.SmallInt, trangThai)
-      .input("MaGiangVien", sql.NVarChar(20), maGiangVien).query(`
+      .input("MaGiangVien", sql.NVarChar(20), maGiangVien) // Thêm MaGiangVien
+      .query(`
         INSERT INTO GIANGVIENN (MSGV, HoGV, TenGV, NgaySinh, GioiTinh, SDT, MaTK, CCCD, MaBM, DiaChi, TrangThai, MaGiangVien)
         VALUES (@MSGV, @HoGV, @TenGV, @NgaySinh, @GioiTinh, @SDT, @MaTK, @CCCD, @MaBM, @DiaChi, @TrangThai, @MaGiangVien);
         SELECT TOP 1 * FROM GIANGVIENN ORDER BY ID DESC;
       `);
 
-    const gv = result.recordset[0];
+    const gv = giangVienResult.recordset[0];
     res.status(201).json({ id: gv.ID, ...gv }); // Responding with the newly added lecturer's data
+
   } catch (err) {
     console.error("Lỗi thêm giảng viên:", err);
     res.status(500).json({ message: "Không thể thêm giảng viên" });
   }
 };
+
+
+
 
 exports.updateGiangVien = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -967,28 +1003,45 @@ exports.deleteKhoa = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi xóa khoa" });
   }
 };
-
 exports.updateSinhVien = async (req, res) => {
-  const id = req.params.id;
-  const { maSinhVien, maTK, maLopHoc, hoTen } = req.body;
+  const id = parseInt(req.params.id); // ID từ URL
+
+  const {
+    MaSinhVien,
+    MaTK,
+    MaLopHoc,
+    HoTen
+  } = req.body;
+
+console.log(req.body);
+  if (!MaTK || !MaLopHoc || !HoTen) {
+    return res.status(400).json({ message: "Thiếu thông tin cần thiết." });
+  }
+
   try {
     await pool
       .request()
       .input("ID", sql.Int, id)
-      .input("MaSinhVien", sql.VarChar(20), maSinhVien)
-      .input("MaTK", sql.Int, maTK)
-      .input("MaLopHoc", sql.Int, maLopHoc)
-      .input("HoTen", sql.NVarChar(255), hoTen)
-      .query(
-        `UPDATE SINHVIEN SET MaSinhVien = @MaSinhVien, MaTK = @MaTK, MaLopHoc = @MaLopHoc, HoTen = @HoTen WHERE ID = @ID`
-      );
+      .input("MaSinhVien", sql.VarChar(20), MaSinhVien)
+      .input("MaTK", sql.Int, MaTK)
+      .input("MaLopHoc", sql.Int, MaLopHoc)
+      .input("HoTen", sql.NVarChar(255), HoTen)
+      .query(`
+        UPDATE SINHVIEN
+        SET MaSinhVien = @MaSinhVien,
+            MaTK = @MaTK,
+            MaLopHoc = @MaLopHoc,
+            HoTen = @HoTen
+        WHERE ID = @ID
+      `);
 
-    res.status(200).json({ id, maSinhVien, maTK, maLopHoc, hoTen });
+    res.status(200).json({ id, MaSinhVien, MaTK, MaLopHoc, HoTen });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Lỗi update sinh viên:", err);
     res.status(500).json({ message: "Không thể cập nhật sinh viên" });
   }
 };
+
 
 exports.deleteSinhVien = async (req, res) => {
   const id = req.params.id;
@@ -1012,22 +1065,25 @@ exports.deleteSinhVien = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi xóa sinh viên" });
   }
 };
-
 exports.addLopHoc = async (req, res) => {
-  const { MaLop, TenLP, MaBM } = req.body;
+  const { tenLP, maBM } = req.body;  // Không cần gửi MaLop nữa
+
   try {
+    // Câu lệnh INSERT không cần MaLop nữa vì MaLop tự tăng
     await pool
       .request()
-      .input("MaLop", sql.VarChar(20), MaLop)
-      .input("TenLP", sql.NVarChar(255), TenLP)
-      .input("MaBM", sql.Int, MaBM).query(`
-        INSERT INTO LOPHOC (MaLop, TenLP, MaBM)
-        VALUES (@MaLop, @TenLP, @MaBM)
+      .input("TenLP", sql.NVarChar(255), tenLP)
+      .input("MaBM", sql.Int, maBM)
+      .query(`
+        INSERT INTO LOPHOC (TenLP, MaBM)
+        VALUES (@TenLP, @MaBM);
     `);
 
+    // Lấy bản ghi vừa chèn
     const result = await pool
       .request()
       .query("SELECT TOP 1 * FROM LOPHOC ORDER BY ID DESC");
+
     const inserted = result.recordset[0];
 
     res.status(201).json({ id: inserted.ID, ...inserted });
@@ -1036,6 +1092,7 @@ exports.addLopHoc = async (req, res) => {
     res.status(500).json({ message: "Không thể thêm lớp học" });
   }
 };
+
 // exports.getAllUsers = async (req, res) => {
 //   try {
 //     const result = await pool.request().query("SELECT * FROM USERS");
@@ -1097,26 +1154,33 @@ exports.addLopHoc = async (req, res) => {
 // };
 exports.updateUsers = async (req, res) => {
   const id = parseInt(req.params.id);
-  const { maNguoiDung, email, matKhau, hoTen, quyen, trangThai } = req.body;
+  const {
+    maNguoiDung,
+    email,
+    matKhau,
+    hoTen,
+    quyen,
+    trangThai,
+  } = req.body; // 👈 camelCase đúng như frontend gửi
 
   if (!maNguoiDung || !email || !matKhau) {
-    console.log("📥 Body nhận được:", req.body);
-
+    console.log("📥 Thiếu thông tin:", req.body);
     return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
   }
 
   try {
-    console.log("🔍 Cập nhật user:", req.body);
+    console.log("🔄 Cập nhật USER:", req.body);
 
     await pool
       .request()
       .input("ID", sql.Int, id)
       .input("MaNguoiDung", sql.VarChar(20), maNguoiDung)
       .input("Email", sql.NVarChar(100), email)
-      .input("HoTen", sql.NVarChar(255), hoTen)
       .input("MatKhau", sql.NVarChar(255), matKhau)
+      .input("HoTen", sql.NVarChar(255), hoTen)
       .input("Quyen", sql.Int, quyen)
-      .input("TrangThai", sql.SmallInt, trangThai).query(`
+      .input("TrangThai", sql.SmallInt, trangThai)
+      .query(`
         UPDATE USERS
         SET MaNguoiDung = @MaNguoiDung,
             Email = @Email,
@@ -1124,15 +1188,25 @@ exports.updateUsers = async (req, res) => {
             HoTen = @HoTen,
             Quyen = @Quyen,
             TrangThai = @TrangThai
-        WHERE ID = @ID;
+        WHERE ID = @ID
       `);
 
-    res.status(200).json({ id, maNguoiDung, email, matKhau, quyen, trangThai });
+    res.status(200).json({
+      id,
+      maNguoiDung,
+      email,
+      matKhau,
+      hoTen,
+      quyen,
+      trangThai,
+    });
   } catch (err) {
     console.error("❌ Lỗi cập nhật user:", err);
     res.status(500).json({ message: "Không thể cập nhật user" });
   }
 };
+
+
 
 exports.deleteUsers = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -1160,7 +1234,7 @@ exports.updateLopHoc = async (req, res) => {
   const id = parseInt(req.params.id);
   const { maLop, tenLP, maBM } = req.body;
 
-  if (!maLop || !tenLP || !maBM) {
+  if (!tenLP || !maLop || !maBM) {
     return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
   }
 
@@ -1172,7 +1246,8 @@ exports.updateLopHoc = async (req, res) => {
       .input("ID", sql.Int, id)
       .input("MaLop", sql.VarChar(20), maLop)
       .input("TenLP", sql.NVarChar(255), tenLP)
-      .input("MaBM", sql.Int, maBM).query(`
+      .input("MaBM", sql.Int, maBM)
+      .query(`
         UPDATE LOPHOC
         SET MaLop = @MaLop,
             TenLP = @TenLP,
@@ -1186,6 +1261,7 @@ exports.updateLopHoc = async (req, res) => {
     res.status(500).json({ message: "Không thể cập nhật lớp học" });
   }
 };
+
 
 exports.deleteLopHoc = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -1208,30 +1284,52 @@ exports.deleteLopHoc = async (req, res) => {
     res.status(500).json({ message: "Không thể xóa lớp học" });
   }
 };
-
 exports.addLopHoc = async (req, res) => {
-  const { MaLop, TenLP, MaBM } = req.body;
+  const { tenLP, maBM } = req.body;
+
+  if (!tenLP || !maBM) {
+    return res.status(400).json({ message: "Tên lớp và Mã bộ môn không được để trống." });
+  }
+
   try {
+    // Bước 1: Thêm lớp học vào bảng mà không cần MaLop (MaLop tự động sinh ra sau)
     await pool
       .request()
-      .input("MaLop", sql.VarChar(20), MaLop)
-      .input("TenLP", sql.NVarChar(255), TenLP)
-      .input("MaBM", sql.Int, MaBM).query(`
-        INSERT INTO LOPHOC (MaLop, TenLP, MaBM)
-        VALUES (@MaLop, @TenLP, @MaBM)
+      .input("TenLP", sql.NVarChar(255), tenLP)  // Truyền tên lớp
+      .input("MaBM", sql.Int, maBM)              // Truyền mã bộ môn
+      .query(`
+        INSERT INTO LOPHOC (TenLP, MaBM)
+        VALUES (@TenLP, @MaBM);
     `);
 
+    // Bước 2: Lấy lớp học vừa thêm để lấy ID và tự tạo MaLop
     const result = await pool
       .request()
       .query("SELECT TOP 1 * FROM LOPHOC ORDER BY ID DESC");
-    const inserted = result.recordset[0];
 
-    res.status(201).json({ id: inserted.ID, ...inserted });
+    const inserted = result.recordset[0];
+    const maLop = `L${String(inserted.ID).padStart(3, '0')}`; // Tạo mã lớp L001, L002, ...
+
+    // Bước 3: Cập nhật mã lớp vào bảng `LOPHOC`
+    await pool
+      .request()
+      .input("MaLop", sql.VarChar(20), maLop)   // Mã lớp mới
+      .input("ID", sql.Int, inserted.ID)        // ID lớp học vừa chèn
+      .query(`
+        UPDATE LOPHOC
+        SET MaLop = @MaLop
+        WHERE ID = @ID
+    `);
+
+    // Trả về lớp học đã được tạo
+    res.status(201).json({ id: inserted.ID, maLop, ...inserted });
   } catch (err) {
-    console.error("Lỗi addLopHoc:", err);
+    console.error("Lỗi thêm lớp học:", err);
     res.status(500).json({ message: "Không thể thêm lớp học" });
   }
 };
+
+
 
 exports.addLopHocPhan = async (req, res) => {
   const {
@@ -1246,37 +1344,59 @@ exports.addLopHocPhan = async (req, res) => {
     luuTru,
     trangThai,
   } = req.body;
-  console.log("Dữ liệu thêm lớp học phần:", req.body);
+
+  // Kiểm tra xem mã giảng viên (MaGV) có tồn tại trong bảng GIANGVIENN không
+  const checkGiangVien = await pool
+    .request()
+    .input("MaGV", sql.Int, maGV)
+    .query("SELECT * FROM GIANGVIENN WHERE ID = @MaGV");
+
+  if (!checkGiangVien.recordset.length) {
+    return res.status(400).json({ message: "Mã giảng viên không hợp lệ" });
+  }
+
   try {
+    // Thêm lớp học phần vào bảng LOPHOCPHAN
     await pool
       .request()
-      .input("TenLHP", sql.VarChar(20), tenLHP)
+      .input("TenLHP", sql.NVarChar, tenLHP)
       .input("NgayTao", sql.DateTime, ngayTao)
       .input("HocKy", sql.SmallInt, hocKy)
       .input("ChinhSach", sql.SmallInt, chinhSach)
       .input("NamHoc", sql.Int, namHoc)
-      .input("MaGV", sql.Int, maGV)
-      .input("MaLH", sql.Int, maLH)
-      .input("MaMH", sql.Int, maMH)
+      .input("MaGV", sql.Int, maGV)  // Giảng viên có mã MaGV từ client
+      .input("MaLH", sql.Int, maLH)  // Lớp học có mã MaLH từ client
+      .input("MaMH", sql.Int, maMH)  // Môn học có mã MaMH từ client
       .input("LuuTru", sql.SmallInt, luuTru)
-      .input("TrangThai", sql.SmallInt, trangThai).query(`
+      .input("TrangThai", sql.SmallInt, trangThai)
+      .query(`
         INSERT INTO LOPHOCPHAN (TenLHP, NgayTao, HocKy, ChinhSach, NamHoc, MaGV, MaLH, MaMH, LuuTru, TrangThai)
         VALUES (@TenLHP, @NgayTao, @HocKy, @ChinhSach, @NamHoc, @MaGV, @MaLH, @MaMH, @LuuTru, @TrangThai);
-        
       `);
 
+    // Lấy bản ghi mới nhất từ bảng LOPHOCPHAN
     const result = await pool
       .request()
       .query("SELECT TOP 1 * FROM LOPHOCPHAN ORDER BY ID DESC");
+
     const inserted = result.recordset[0];
-    const query1 = `INSERT INTO SINHVIEN_LHP (MaSV, MaLHP,TrangThai) SELECT ID, ${inserted.ID}, 1 FROM SINHVIEN WHERE MaLopHoc = ${maLH}`;
-    res.status(201).json({ id: inserted.ID, ...inserted });
+
+    // Nếu cần, có thể thêm sinh viên vào lớp học phần (nếu có dữ liệu về lớp học)
+    const query1 = `
+      INSERT INTO SINHVIEN_LHP (MaSV, MaLHP, TrangThai)
+      SELECT ID, ${inserted.ID}, 1 FROM SINHVIEN WHERE MaLopHoc = ${maLH}
+    `;
     await pool.request().query(query1);
+
+    // Trả về kết quả lớp học phần vừa thêm
+    res.status(201).json({ id: inserted.ID, ...inserted });
   } catch (err) {
-    console.error(err);
+    console.error("Lỗi thêm lớp học phần:", err);
     res.status(500).json({ message: "Không thể thêm lớp học phần" });
   }
 };
+
+
 
 exports.updateLopHoc = async (req, res) => {
   const id = parseInt(req.params.id);

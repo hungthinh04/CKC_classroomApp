@@ -3,15 +3,26 @@ import {
   Datagrid,
   TextField,
   EditButton,
-  TextInput,
-  DateInput,
-  NumberInput,
-  SelectInput,
   Edit,
   SimpleForm,
+  TextInput,
   Create,
+  SelectInput,
+  NumberInput,
+  FunctionField,
+  ReferenceInput,
+  AutocompleteInput,
   SaveButton,
+  DateInput,
+  maxValue
 } from "react-admin";
+import { required, regex, minValue } from 'react-admin';  // Chú ý: Thay `pattern` bằng `regex`
+
+const maxDate = () => {
+  const currentDate = new Date();
+  currentDate.setDate(currentDate.getDate() + 1); // Thêm một ngày
+  return currentDate.toISOString().split('T')[0]; 
+}
 
 const GiangVienFilter = [
   <TextInput label="Tìm theo tên" source="TenGV" alwaysOn />,
@@ -20,6 +31,7 @@ const GiangVienFilter = [
 export const GiangVienList = () => (
   <List filters={GiangVienFilter} perPage={10}>
     <Datagrid rowClick="edit">
+      <FunctionField label="STT" render={(record, index) => index + 1} />
       <TextField source="id" label="ID" />
       <TextField source="MSGV" label="MSGV" />
       <TextField source="HoGV" label="Họ" />
@@ -43,9 +55,21 @@ export const GiangVienEdit = () => (
     <SimpleForm>
       <TextInput source="id" disabled />
       <TextInput source="msgv" label="MSGV" />
-      <TextInput source="hoGV" label="Họ" />
-      <TextInput source="tenGV" label="Tên" />
-      <DateInput source="ngaySinh" label="Ngày sinh" />
+      <TextInput
+        source="hoGV"
+        label="Họ"
+        validate={[required(), regex(/^[A-Za-z\s]+$/, 'Họ không được chứa số')]}
+      />
+      <TextInput
+        source="tenGV"
+        label="Tên"
+        validate={[required(), regex(/^[A-Za-z\s]+$/, 'Tên không được chứa số')]}
+      />
+      <DateInput
+        source="ngaySinh"
+        label="Ngày sinh"
+        validate={[required(), minValue('1925-01-01', 'Ngày sinh phải lớn hơn 1925'),  maxValue(maxDate(), 'Ngày sinh không hợp lệ'),]}
+      />
       <SelectInput
         source="gioiTinh"
         label="Giới tính"
@@ -54,8 +78,22 @@ export const GiangVienEdit = () => (
           { id: 1, name: "Nữ" },
         ]}
       />
-      <TextInput source="sdt" label="Số điện thoại" />
-      <TextInput source="cccd" label="CCCD" />
+      <TextInput
+        source="sdt"
+        label="Số điện thoại"
+        validate={[
+          required(),
+          regex(/^\d{10}$/, 'Số điện thoại phải có 10 chữ số'),
+        ]}
+      />
+      <TextInput
+        source="cccd"
+        label="CCCD"
+        validate={[
+          required(),
+          regex(/^\d{12}$/, 'CCCD phải có 12 chữ số'),
+        ]}
+      />
       <TextInput source="diaChi" label="Địa chỉ" />
       <NumberInput source="maTK" label="Mã Tài Khoản" />
       <NumberInput source="maBM" label="Mã Bộ môn" />
@@ -63,8 +101,9 @@ export const GiangVienEdit = () => (
         source="trangThai"
         label="Trạng thái"
         choices={[
-          { id: 0, name: "Ngừng hoạt động" },
-          { id: 1, name: "Hoạt động" },
+          { id: 0, name: "Đang học" },
+          { id: 1, name: "Bị đình chỉ" },
+          { id: 2, name: "Đã tốt nghiệp" },
         ]}
       />
       <TextInput source="maGiangVien" label="Mã Giảng Viên" />
@@ -76,9 +115,21 @@ export const GiangVienCreate = (props) => (
   <Create {...props}>
     <SimpleForm>
       <TextInput source="msgv" label="MSGV" />
-      <TextInput source="hoGV" label="Họ" />
-      <TextInput source="tenGV" label="Tên" />
-      <DateInput source="ngaySinh" label="Ngày sinh" />
+      <TextInput
+        source="hoGV"
+        label="Họ"
+        validate={[required(), regex(/^[A-Za-z\s]+$/, 'Họ không được chứa số')]}
+      />
+      <TextInput
+        source="tenGV"
+        label="Tên"
+        validate={[required(), regex(/^[A-Za-z\s]+$/, 'Tên không được chứa số')]}
+      />
+      <DateInput
+        source="ngaySinh"
+        label="Ngày sinh"
+        validate={[required(), minValue('1925-01-01', 'Ngày sinh không hợp lệ')]}
+      />
       <SelectInput
         source="gioiTinh"
         label="Giới tính"
@@ -87,17 +138,35 @@ export const GiangVienCreate = (props) => (
           { id: 1, name: "Nữ" },
         ]}
       />
-      <TextInput source="sdt" label="Số điện thoại" />
-      <TextInput source="cccd" label="CCCD" />
+      <TextInput
+        source="sdt"
+        label="Số điện thoại"
+        validate={[
+          required(),
+          regex(/^\d{10}$/, 'Số điện thoại phải có 10 chữ số'),
+        ]}
+      />
+      <TextInput
+        source="cccd"
+        label="CCCD"
+        validate={[
+          required(),
+          regex(/^\d{12}$/, 'CCCD phải có 12 chữ số'),
+        ]}
+      />
       <TextInput source="diaChi" label="Địa chỉ" />
       <NumberInput source="maTK" label="Mã Tài Khoản" />
-      <NumberInput source="maBM" label="Mã Bộ môn" />
+      <ReferenceInput source="maBM" reference="bomon" label="Bộ môn">
+        <AutocompleteInput optionText="TenBM" label="Tên Bộ Môn" />
+      </ReferenceInput>
+
       <SelectInput
         source="trangThai"
         label="Trạng thái"
         choices={[
-          { id: 0, name: "Ngừng hoạt động" },
-          { id: 1, name: "Hoạt động" },
+          { id: 0, name: "Đang học" },
+          { id: 1, name: "Bị đình chỉ" },
+          { id: 2, name: "Đã tốt nghiệp" },
         ]}
       />
       <TextInput source="maGiangVien" label="Mã Giảng Viên" />
