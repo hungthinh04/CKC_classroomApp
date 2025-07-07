@@ -152,8 +152,7 @@ exports.getGiangVienById = async (req, res) => {
       .query("SELECT * FROM GIANGVIENN WHERE ID = @ID");
 
     const gv = result.recordset[0];
-    if (!gv)
-      return res.status(404).json({ message: "Không tìm thấy giảng viên" });
+    if (!gv) return res.status(404).json({ message: "Không tìm thấy giảng viên" });
 
     res.json({
       id: gv.ID,
@@ -171,7 +170,7 @@ exports.getGiangVienById = async (req, res) => {
       maGiangVien: gv.MaGiangVien,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Lỗi khi lấy giảng viên:", err);
     res.status(500).json({ message: "Lỗi truy vấn giảng viên" });
   }
 };
@@ -359,12 +358,19 @@ exports.getAllBoMon = async (req, res) => {
     const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
     const tenBM = filter.TenBM || "";
 
+    // JOIN BOMON với KHOA để lấy tên khoa
     const result = await pool
       .request()
       .input("TenBM", sql.NVarChar, `%${tenBM}%`)
       .query(`
-        SELECT * FROM BOMON
-        WHERE TenBM LIKE @TenBM
+        SELECT 
+          BM.ID, 
+          BM.TenBM, 
+          BM.MaKhoa, 
+          K.TenKhoa  -- Thêm tên khoa
+        FROM BOMON BM
+        JOIN KHOA K ON BM.MaKhoa = K.ID
+        WHERE BM.TenBM LIKE @TenBM
         ORDER BY ${sortFieldSafe} ${sortOrder.toUpperCase()}
       `);
 
@@ -386,6 +392,7 @@ exports.getAllBoMon = async (req, res) => {
     res.status(500).json({ message: "Lỗi truy vấn bộ môn" });
   }
 };
+
 
 
 exports.addKhoa = async (req, res) => {
@@ -627,7 +634,7 @@ exports.getAllGiangVien = async (req, res) => {
     const result = await pool.request().query("SELECT * FROM GIANGVIENN");
     const total = result.recordset.length;
 
-    res.set("Content-Range", `giangvienn 0-${total - 1}/${total}`);
+    res.set("Content-Range", `giangvien 0-${total - 1}/${total}`);
     res.set("Access-Control-Expose-Headers", "Content-Range");
 
     const data = result.recordset.map((item) => ({
@@ -637,7 +644,7 @@ exports.getAllGiangVien = async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    console.error(err);
+    console.error("Lỗi khi lấy giảng viên:", err);
     res.status(500).json({ message: "Lỗi truy vấn giảng viên" });
   }
 };
@@ -744,6 +751,8 @@ exports.getAllGiangVien = async (req, res) => {
 //       .json({ message: "Không thể thêm giảng viên hoặc sinh viên" });
 //   }
 // };
+
+
 const removeDiacritics = (str) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
@@ -761,7 +770,6 @@ exports.addGiangVien = async (req, res) => {
     trangThai,
   } = req.body;
 
-  // Loại bỏ dấu trong tên giảng viên để tạo email mà không có dấu chấm
   const email = `${removeDiacritics(hoGV.toLowerCase().replace(" ", ""))}${removeDiacritics(tenGV.toLowerCase().replace(" ", ""))}@ckc.vn`;
 
   try {
@@ -777,24 +785,24 @@ exports.addGiangVien = async (req, res) => {
         SELECT SCOPE_IDENTITY() AS MaTK;
       `);
 
-    const maTK = userResult.recordset[0].MaTK; // Lấy MaTK từ kết quả
+    const maTK = userResult.recordset[0].MaTK;
 
-    const maGiangVien = `GV${maTK.toString().padStart(3, '0')}`;  // Tạo mã giảng viên từ MaTK
+    const maGiangVien = `GV${maTK.toString().padStart(3, '0')}`;
 
     const giangVienResult = await pool
       .request()
-      .input("MSGV", sql.Char(10), `gv${maTK}`)  // Tạo MSGV từ MaTK
+      .input("MSGV", sql.VarChar(10), `gv${maTK}`)
       .input("HoGV", sql.NVarChar(255), hoGV)
       .input("TenGV", sql.NVarChar(255), tenGV)
       .input("NgaySinh", sql.DateTime, ngaySinh)
       .input("GioiTinh", sql.SmallInt, gioiTinh)
       .input("SDT", sql.VarChar(20), sdt)
-      .input("MaTK", sql.Int, maTK)  // Liên kết với tài khoản người dùng
+      .input("MaTK", sql.Int, maTK)
       .input("CCCD", sql.NVarChar(20), cccd)
       .input("MaBM", sql.Int, maBM)
       .input("DiaChi", sql.Text, diaChi)
       .input("TrangThai", sql.SmallInt, trangThai)
-      .input("MaGiangVien", sql.NVarChar(20), maGiangVien) // Thêm MaGiangVien
+      .input("MaGiangVien", sql.NVarChar(20), maGiangVien)
       .query(`
         INSERT INTO GIANGVIENN (MSGV, HoGV, TenGV, NgaySinh, GioiTinh, SDT, MaTK, CCCD, MaBM, DiaChi, TrangThai, MaGiangVien)
         VALUES (@MSGV, @HoGV, @TenGV, @NgaySinh, @GioiTinh, @SDT, @MaTK, @CCCD, @MaBM, @DiaChi, @TrangThai, @MaGiangVien);
@@ -802,14 +810,12 @@ exports.addGiangVien = async (req, res) => {
       `);
 
     const gv = giangVienResult.recordset[0];
-    res.status(201).json({ id: gv.ID, ...gv }); // Responding with the newly added lecturer's data
-
+    res.status(201).json({ id: gv.ID, ...gv });
   } catch (err) {
     console.error("Lỗi thêm giảng viên:", err);
     res.status(500).json({ message: "Không thể thêm giảng viên" });
   }
 };
-
 
 
 
@@ -834,7 +840,7 @@ exports.updateGiangVien = async (req, res) => {
     await pool
       .request()
       .input("ID", sql.Int, id)
-      .input("MSGV", sql.Char(10), msgv)
+      .input("MSGV", sql.VarChar(10), msgv)
       .input("HoGV", sql.NVarChar(255), hoGV)
       .input("TenGV", sql.NVarChar(255), tenGV)
       .input("NgaySinh", sql.DateTime, ngaySinh)
@@ -845,8 +851,9 @@ exports.updateGiangVien = async (req, res) => {
       .input("MaBM", sql.Int, maBM)
       .input("DiaChi", sql.Text, diaChi)
       .input("TrangThai", sql.SmallInt, trangThai)
-      .input("MaGiangVien", sql.NVarChar(20), maGiangVien).query(`
-        UPDATE GIANGVIEN SET
+      .input("MaGiangVien", sql.NVarChar(20), maGiangVien)
+      .query(`
+        UPDATE GIANGVIENN SET
           MSGV = @MSGV,
           HoGV = @HoGV,
           TenGV = @TenGV,
@@ -1487,17 +1494,26 @@ exports.updateLopHocPhan = async (req, res) => {
 exports.deleteLopHocPhan = async (req, res) => {
   const { id } = req.params;
   try {
+    // Bước 1: Xóa các bản ghi liên quan trong bảng SINHVIEN_LHP
+    await pool
+      .request()
+      .input("MaLHP", sql.Int, id)
+      .query("DELETE FROM SINHVIEN_LHP WHERE MaLHP = @MaLHP");
+
+    // Bước 2: Xóa bản ghi trong bảng LOPHOCPHAN
     await pool
       .request()
       .input("ID", sql.Int, id)
       .query("DELETE FROM LOPHOCPHAN WHERE ID = @ID");
 
+    // Bước 3: Reset IDENTITY trong bảng LOPHOCPHAN
     await pool.request().query(`
       DECLARE @MaxID INT;
       SELECT @MaxID = ISNULL(MAX(ID), 0) FROM LOPHOCPHAN;
       DBCC CHECKIDENT ('LOPHOCPHAN', RESEED, @MaxID);
     `);
 
+    // Trả về phản hồi thành công
     res
       .status(200)
       .json({ id: parseInt(id), message: "Xóa lớp học phần thành công" });

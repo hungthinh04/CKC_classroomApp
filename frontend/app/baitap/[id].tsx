@@ -18,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system";
 import axios from "axios";
 import { BASE_URL } from "@/constants/Link";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ChiTietBaiTapScreen() {
   const { id } = useLocalSearchParams(); // ID của bài viết
@@ -201,176 +202,92 @@ export default function ChiTietBaiTapScreen() {
   const fileUrl = bv.DuongDanFile ? `${BASE_URL}${bv.DuongDanFile}` : null;
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Tiêu đề bài viết */}
+    <View style={styles.container}>
       <Text style={styles.title}>{bv.tieuDe}</Text>
-
-      {/* Nội dung bài viết */}
       <Text style={styles.content}>{bv.noiDung}</Text>
+      <Text style={styles.meta}>⏰ Hạn nộp: {bv.hanNop?.slice(0, 10)}</Text>
+      <Text style={styles.meta}>👨‍🏫 GV: {bv.tenNguoiDang}</Text>
 
-      {/* Thông tin metadata */}
-      <View style={styles.metaBox}>
-        {/* <Text style={styles.meta}>🧾 Mã: {bv.maBaiViet}</Text> */}
-        <Text style={styles.meta}>🗓 Ngày tạo: {bv.ngayTao?.slice(0, 10)}</Text>
-        <Text style={styles.meta}>⏰ Hạn nộp: {bv.hanNop?.slice(0, 10)}</Text>
-        <Text style={styles.meta}>
-          👨‍🏫 GV: {bv.HoGV} {bv.TenGV}
-        </Text>
-      </View>
-
-      {/* File đính kèm */}
-      {fileUrl && (
+      {bv.duongDanFile && (
         <TouchableOpacity
           style={styles.attachment}
-          onPress={() => Linking.openURL(fileUrl)}
+          onPress={() => Linking.openURL(`${BASE_URL}${bv.duongDanFile}`)}
         >
           <Text style={styles.attachmentText}>📎 Xem file đính kèm</Text>
         </TouchableOpacity>
       )}
 
-      {/* Nộp bài */}
-      {bv.loaiBV === 1 && (
-        <View style={styles.submitBox}>
-          <Text style={styles.sectionLabel}>Nộp bài tập của bạn</Text>
+      <View style={styles.submitBox}>
+        <Text style={styles.sectionLabel}>Nộp bài tập của bạn</Text>
+        <TouchableOpacity onPress={chonTep} style={styles.chooseFileBtn}>
+          <Text style={styles.chooseFileText}>
+            {tep ? `📄 Đã chọn: ${tep.name}` : "📎 Chọn tệp bài tập"}
+          </Text>
+        </TouchableOpacity>
 
-          {/* Hiển thị tên tệp khi đã chọn */}
-          <TouchableOpacity onPress={chonTep} style={{ marginBottom: 12 }}>
-            <Text style={{ color: "#007bff" }}>
-              {tep ? `📄 Đã chọn: ${tep.name}` : "📎 Chọn tệp bài tập"}
-            </Text>
-          </TouchableOpacity>
+        {tep && tep.uri && <Image source={{ uri: tep.uri }} style={styles.imagePreview} />}
 
-          {/* Nếu là file ảnh, hiển thị ảnh */}
-          {tep &&
-            tep.uri &&
-            (tep.mimeType?.includes("image") ? (
-              <Image source={{ uri: tep.uri }} style={styles.imagePreview} />
-            ) : null)}
+        <TextInput
+          value={nhanXet}
+          onChangeText={setNhanXet}
+          placeholder="✏️ Nhập nhận xét"
+          multiline
+          numberOfLines={4}
+          style={styles.textInput}
+        />
 
-          {/* Nhận xét cho bài tập */}
-          <TextInput
-            value={nhanXet}
-            onChangeText={setNhanXet}
-            placeholder="✏️ Nhận xét cho bài tập (tuỳ chọn)"
-            multiline
-            numberOfLines={4}
-            style={styles.textInput}
-          />
-
-          {/* Nút gửi bài */}
-          <Button
-            title={loading ? "Đang gửi..." : "📤 Gửi bài tập"}
-            onPress={uploadFile}
-            disabled={loading}
-            color="#0ea5e9"
-          />
-        </View>
-      )}
-
-      <View style={styles.submissions}>
-        <Text style={styles.sectionTitle}>Danh sách bài nộp</Text>
-        <ScrollView>
-          {baiNop.map((item) => (
-            <View style={styles.card} key={item.ID}>
-              <Text style={styles.submissionTitle}>{item.sinhVienHoTen}</Text>
-              <Text style={styles.meta}>
-                Ngày nộp: {item.NgayNop.slice(0, 10)}
-              </Text>
-              {item.LienKet && (
-                <TouchableOpacity
-                  onPress={() => Linking.openURL(`${BASE_URL}${item.LienKet}`)}
-                >
-                  <Text style={styles.link}>Mở bài đã nộp</Text>
-                </TouchableOpacity>
-              )}
-              {item.VanBan && <Text style={styles.comment}>{item.VanBan}</Text>}
-            </View>
-          ))}
-        </ScrollView>
+        <TouchableOpacity
+          style={[styles.submitBtn, { backgroundColor: loading ? "#B2DFDB" : "#4666ec" }]}
+          onPress={uploadFile}
+          disabled={loading}
+        >
+          <Ionicons name="cloud-upload-outline" size={20} color="#fff" style={styles.icon} />
+          <Text style={styles.submitBtnText}>
+            {loading ? "Đang gửi..." : "📤 Gửi bài tập"}
+          </Text>
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+
+      <FlatList
+        data={baiNop}
+        keyExtractor={(item) => item.ID.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={styles.submissionTitle}>{item.sinhVienHoTen}</Text>
+            <Text style={styles.meta}>Ngày nộp: {item.NgayNop.slice(0, 10)}</Text>
+            {item.LienKet && (
+              <TouchableOpacity onPress={() => Linking.openURL(`${BASE_URL}${item.LienKet}`)}>
+                <Text style={styles.link}>Mở bài đã nộp</Text>
+              </TouchableOpacity>
+            )}
+            {item.VanBan && <Text style={styles.comment}>{item.VanBan}</Text>}
+          </View>
+        )}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#f9fafb", flex: 1 },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 12,
-    color: "#1e293b",
-  },
+  container: { flex: 1, padding: 16, backgroundColor: "#f0f8ff" },
+  title: { fontSize: 22, fontWeight: "bold", color: "#1e293b", marginBottom: 12 },
   content: { fontSize: 16, color: "#374151", marginBottom: 12, lineHeight: 22 },
-  metaBox: {
-    marginBottom: 16,
-    backgroundColor: "#e5e7eb",
-    padding: 12,
-    borderRadius: 8,
-  },
-  meta: { fontSize: 13, color: "#374151", marginBottom: 4 },
-  attachment: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: "#e0f2fe",
-    borderRadius: 8,
-    marginBottom: 20,
-  },
+  meta: { fontSize: 14, color: "#4666ec", marginBottom: 4 },
+  attachment: { padding: 12, backgroundColor: "#e0f7fa", borderRadius: 8, marginBottom: 20 },
   attachmentText: { color: "#0284c7", fontWeight: "bold" },
-  submitBox: { borderTopWidth: 1, borderColor: "#ccc", paddingTop: 16 },
-  sectionLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-    color: "#1e293b",
+  submitBox: { marginTop: 16, borderTopWidth: 1, borderColor: "#ccc", paddingTop: 16 },
+  sectionLabel: { fontSize: 16, fontWeight: "600", color: "#1e293b", marginBottom: 12 },
+  chooseFileBtn: { marginBottom: 12 },
+  chooseFileText: { color: "#007bff", fontWeight: "600" },
+  imagePreview: { width: "100%", height: 200, marginTop: 12, borderRadius: 6, resizeMode: "contain" },
+  textInput: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 10, marginBottom: 12, backgroundColor: "#fff" },
+  submitBtn: {
+    flexDirection: "row", alignItems: "center", paddingVertical: 14, borderRadius: 10, justifyContent: "center", marginTop: 20, elevation: 5,
   },
-  imagePreview: {
-    width: "100%",
-    height: 200,
-    marginTop: 12,
-    borderRadius: 6,
-    resizeMode: "contain",
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 12,
-    backgroundColor: "#fff",
-    textAlignVertical: "top",
-  },
-
-  submissions: {
-    marginTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  card: {
-    padding: 12,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-  submissionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-
-  link: {
-    color: "#007bff",
-    marginTop: 6,
-  },
-  comment: {
-    fontSize: 14,
-    fontStyle: "italic",
-    marginTop: 6,
-  },
+  submitBtnText: { fontSize: 16, color: "#fff", fontWeight: "600" },
+  icon: { marginRight: 10 },
+  card: { padding: 12, backgroundColor: "#fff", borderRadius: 8, marginBottom: 12, elevation: 4 },
+  submissionTitle: { fontSize: 16, fontWeight: "bold" },
+  link: { color: "#0284c7", fontSize: 14 },
+  comment: { fontSize: 14, color: "#666", marginTop: 6 },
 });

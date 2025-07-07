@@ -12,6 +12,7 @@ import {
   AutocompleteInput,
   TextField as ViewField,
   FunctionField,
+  ReferenceField,
 } from "react-admin";
 
 export const SinhVienFilter = [
@@ -24,12 +25,17 @@ export const SinhVienList = () => (
       <FunctionField label="STT" render={(record, index) => index + 1} />
       <TextField source="MaSinhVien" label="Mã SV" />
       <TextField source="HoTen" label="Họ tên" />
-      <TextField source="MaTK" label="Mã TK" />
-      <TextField source="MaLopHoc" label="Mã lớp học" />
+      {/* <ReferenceField source="MaTK" reference="taikhoan" label="Mã TK">
+        <TextField source="TenTK" />
+      </ReferenceField> */}
+      <ReferenceField source="MaLopHoc" reference="lophoc" label="Lớp học" link={false}>
+        <TextField source="tenLP" />
+      </ReferenceField>
       <EditButton />
     </Datagrid>
   </List>
 );
+
 
 export const SinhVienEdit = () => (
   <Edit>

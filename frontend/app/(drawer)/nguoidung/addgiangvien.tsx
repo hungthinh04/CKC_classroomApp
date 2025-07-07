@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, Text, TextInput, Button, Alert, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "@/constants/Link";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function MoiGiangVienScreen() {
   const { maLHP } = useLocalSearchParams();
@@ -50,19 +51,60 @@ export default function MoiGiangVienScreen() {
         autoCapitalize="none"
         keyboardType="email-address"
       />
-      <Button title="📨 Mời" onPress={handleInvite} />
+
+      {/* Nút mời giảng viên */}
+      <TouchableOpacity
+        style={[
+          styles.button,
+          { backgroundColor: email ? "#6EC1E4" : "#D1EAF9" }, // Màu xanh nước
+        ]}
+        onPress={handleInvite}
+        disabled={!email}
+      >
+        <Ionicons name="mail" size={20} color="#fff" style={styles.icon} />
+        <Text style={styles.buttonText}> Mời Giảng viên</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#fff", flex: 1 },
-  label: { fontWeight: "bold", marginBottom: 8 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F0F8FF", // Màu nền xanh nước
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  label: {
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#2C3E50",
+    fontSize: 16,
+  },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 8,
-    marginBottom: 16,
+    borderColor: "#A1C6EA", // Màu viền nhạt xanh nước
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 20,
+    fontSize: 16,
+    backgroundColor: "#fff",
+    color: "#34495E",
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  buttonText: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "bold",
   },
 });

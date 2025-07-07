@@ -14,20 +14,19 @@ import {
   Platform,
   Image,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/stores/useAuth";
-import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "@/constants/Link";
 
 export default function BaiVietDetail() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
-  const navigation = useNavigation();
   const [baiViet, setBaiViet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [editingComment, setEditingComment] = useState<any>(null); // 👉 comment đang sửa
+  const [editingComment, setEditingComment] = useState<any>(null);
 
   const isImage = (url: string) => url.match(/\.(jpeg|jpg|png|gif|webp)$/i);
 
@@ -74,7 +73,7 @@ export default function BaiVietDetail() {
       }
 
       if (editingComment) {
-        // 👉 Cập nhật comment
+        // Cập nhật comment
         const res = await fetch(`${BASE_URL}/api/comments/${editingComment.ID}`, {
           method: "PUT",
           headers: {
@@ -96,7 +95,7 @@ export default function BaiVietDetail() {
           Alert.alert("❌ Lỗi", "Không thể cập nhật nhận xét");
         }
       } else {
-        // 👉 Thêm comment mới
+        // Thêm comment mới
         const postId = parseInt(String(baiViet?.ID));
         const res = await fetch(`${BASE_URL}/baiviet/${postId}/comment`, {
           method: "POST",
@@ -121,10 +120,7 @@ export default function BaiVietDetail() {
 
   const handleDelete = async (commentId: number) => {
     Alert.alert("Xác nhận xoá", "Bạn có chắc muốn xoá nhận xét này?", [
-      {
-        text: "Huỷ",
-        style: "cancel",
-      },
+      { text: "Huỷ", style: "cancel" },
       {
         text: "Xoá",
         style: "destructive",
@@ -160,7 +156,7 @@ export default function BaiVietDetail() {
     ]);
   };
 
-  const handleEdit = (comment) => {
+  const handleEdit = (comment: any) => {
     setNewComment(comment.NoiDung);
     setEditingComment(comment);
   };
@@ -168,7 +164,7 @@ export default function BaiVietDetail() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#888" />
+        <ActivityIndicator size="large" color="#6e81f3" />
       </View>
     );
   }
@@ -186,50 +182,66 @@ export default function BaiVietDetail() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Text style={styles.title}>{baiViet.tieuDe}</Text>
-      <Text style={styles.meta}>
-        Người đăng: {baiViet.tenNguoiDang || "Không rõ"} – 🕒{" "}
-        {new Date(baiViet.ngayTao).toLocaleString("vi-VN")}
-      </Text>
+      {/* Bài viết chính */}
+      <View style={styles.mainCard}>
+        <Text style={styles.title}>{baiViet.tieuDe}</Text>
+        <Text style={styles.meta}>
+          Người đăng: {baiViet.tenNguoiDang || "Không rõ"} ·{" "}
+          <Ionicons name="time-outline" size={13} color="#bbb" />
+          {" "}
+          {new Date(baiViet.ngayTao).toLocaleString("vi-VN")}
+        </Text>
+        <Text style={styles.content}>{baiViet.noiDung}</Text>
 
-      <Text style={styles.content}>{baiViet.noiDung}</Text>
+        {baiViet.fileUrl &&
+          (isImage(baiViet.fileUrl) ? (
+            <Image
+              source={{ uri: baiViet.fileUrl }}
+              style={styles.postImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <TouchableOpacity onPress={() => Linking.openURL(baiViet.fileUrl)}>
+              <Text style={styles.fileLink}>
+                <Ionicons name="attach-outline" size={15} color="#4ade80" /> Tệp đính kèm
+              </Text>
+            </TouchableOpacity>
+          ))}
+      </View>
 
-      {baiViet.fileUrl &&
-        (isImage(baiViet.fileUrl) ? (
-          <Image
-            source={{ uri: baiViet.fileUrl }}
-            style={{
-              width: "100%",
-              height: 200,
-              marginTop: 12,
-              borderRadius: 8,
-            }}
-            resizeMode="contain"
-          />
-        ) : (
-          <Text
-            style={styles.fileLink}
-            onPress={() => Linking.openURL(baiViet.fileUrl)}
-          >
-            📎 Tải tệp đính kèm
-          </Text>
-        ))}
-
+      {/* Nhận xét */}
       <Text style={styles.commentTitle}>💬 Nhận xét</Text>
       <FlatList
         data={comments}
         keyExtractor={(item) => item.ID.toString()}
+        contentContainerStyle={{ paddingBottom: 20 }}
         renderItem={({ item }) => (
           <View style={styles.commentItem}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text style={styles.commentUser}>{item.HoTen}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={styles.commentAvatar}>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                  {item.HoTen ? item.HoTen.charAt(0).toUpperCase() : "U"}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.commentUser}>{item.HoTen}</Text>
+                <Text style={styles.commentMeta}>
+                  {new Date(item.NgayTao).toLocaleString("vi-VN")}
+                </Text>
+              </View>
               {item.MaTK === user.id && (
                 <View style={styles.commentActions}>
-                  <TouchableOpacity onPress={() => handleEdit(item)}>
-                    <Text style={styles.editBtn}>Sửa</Text>
+                  <TouchableOpacity
+                    onPress={() => handleEdit(item)}
+                    style={styles.iconBtn}
+                  >
+                    <Ionicons name="create-outline" size={19} color="#60a5fa" />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(item.ID)}>
-                    <Text style={styles.deleteBtn}>Xoá</Text>
+                  <TouchableOpacity
+                    onPress={() => handleDelete(item.ID)}
+                    style={styles.iconBtn}
+                  >
+                    <Ionicons name="trash-outline" size={19} color="#f87171" />
                   </TouchableOpacity>
                 </View>
               )}
@@ -238,7 +250,7 @@ export default function BaiVietDetail() {
           </View>
         )}
         ListEmptyComponent={
-          <Text style={{ color: "#aaa", fontStyle: "italic" }}>
+          <Text style={{ color: "#aaa", fontStyle: "italic", textAlign: "center" }}>
             Chưa có nhận xét
           </Text>
         }
@@ -249,14 +261,21 @@ export default function BaiVietDetail() {
         <TextInput
           value={newComment}
           onChangeText={setNewComment}
-          placeholder="Nhập nhận xét..."
-          placeholderTextColor="#888"
+          placeholder={
+            editingComment
+              ? "Chỉnh sửa nhận xét..."
+              : "Nhập nhận xét mới..."
+          }
+          placeholderTextColor="#aaa"
           style={styles.commentInput}
+          multiline
         />
-        <TouchableOpacity onPress={submitComment}>
-          <Text style={styles.sendBtn}>
-            {editingComment ? "Cập nhật" : "Gửi"}
-          </Text>
+        <TouchableOpacity onPress={submitComment} style={styles.sendBtn}>
+          <Ionicons
+            name={editingComment ? "checkmark-done-outline" : "send-outline"}
+            size={21}
+            color="#fff"
+          />
         </TouchableOpacity>
         {editingComment && (
           <TouchableOpacity
@@ -264,10 +283,9 @@ export default function BaiVietDetail() {
               setEditingComment(null);
               setNewComment("");
             }}
+            style={[styles.sendBtn, { backgroundColor: "#222", marginLeft: 5 }]}
           >
-            <Text style={[styles.sendBtn, { color: "#f87171", marginLeft: 12 }]}>
-              Huỷ
-            </Text>
+            <Ionicons name="close-outline" size={21} color="#f87171" />
           </TouchableOpacity>
         )}
       </View>
@@ -276,61 +294,148 @@ export default function BaiVietDetail() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#111" },
+  container: { flex: 1, padding: 0, backgroundColor: "#161b24" },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#111",
+    backgroundColor: "#161b24",
   },
-  title: { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 8 },
-  meta: { color: "#aaa", fontStyle: "italic", marginBottom: 4 },
-  content: { color: "#ddd", fontSize: 16, marginTop: 10 },
+  mainCard: {
+    backgroundColor: "#232d44",
+    borderRadius: 16,
+    padding: 19,
+    margin: 16,
+    shadowColor: "#181e35",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  title: {
+    color: "#fff",
+    fontSize: 21,
+    fontWeight: "bold",
+    marginBottom: 7,
+    letterSpacing: 0.3,
+  },
+  meta: {
+    color: "#b5badb",
+    fontSize: 13.5,
+    marginBottom: 12,
+    fontStyle: "italic",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  content: {
+    color: "#e7ebff",
+    fontSize: 16.5,
+    marginTop: 2,
+    marginBottom: 10,
+    lineHeight: 22,
+  },
+  postImage: {
+    width: "100%",
+    height: 190,
+    borderRadius: 12,
+    marginTop: 9,
+    backgroundColor: "#1c2235",
+  },
   fileLink: {
-    color: "#4ADE80",
-    marginTop: 12,
+    color: "#4ade80",
+    marginTop: 14,
+    fontSize: 15,
     textDecorationLine: "underline",
+    padding: 7,
+    borderRadius: 7,
+    backgroundColor: "#26345a33",
+    overflow: "hidden",
+    alignSelf: "flex-start",
+    fontWeight: "600",
   },
   commentTitle: {
     color: "#fff",
     fontWeight: "bold",
-    marginTop: 20,
+    marginTop: 0,
+    marginLeft: 18,
+    fontSize: 17,
     marginBottom: 8,
   },
-  commentItem: { marginBottom: 6 },
-  commentUser: { color: "#60a5fa", fontWeight: "600" },
-  commentText: { color: "#ddd", marginLeft: 4 },
+  commentItem: {
+    backgroundColor: "#232b3e",
+    borderRadius: 11,
+    marginHorizontal: 16,
+    padding: 12,
+    marginBottom: 8,
+    shadowColor: "#181e35",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.13,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  commentAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#60a5fa",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  commentUser: {
+    color: "#60a5fa",
+    fontWeight: "600",
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  commentMeta: {
+    color: "#bbb",
+    fontSize: 12,
+    fontStyle: "italic",
+  },
+  commentText: {
+    color: "#e7ebff",
+    marginLeft: 3,
+    marginTop: 2,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  commentActions: {
+    flexDirection: "row",
+    gap: 7,
+  },
+  iconBtn: {
+    padding: 4,
+    borderRadius: 5,
+    marginLeft: 3,
+  },
   commentBox: {
     flexDirection: "row",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "#333",
-    paddingTop: 8,
+    borderTopColor: "#26345a",
+    paddingTop: 10,
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === "ios" ? 28 : 13,
+    backgroundColor: "#161b24",
   },
   commentInput: {
     flex: 1,
-    backgroundColor: "#222",
+    backgroundColor: "#232b3e",
     color: "#fff",
-    padding: 8,
-    borderRadius: 6,
-    marginRight: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    fontSize: 15,
+    marginRight: 7,
+    minHeight: 40,
+    maxHeight: 80,
   },
   sendBtn: {
-    fontSize: 16,
-    color: "#4ade80",
-  },
-  commentActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  editBtn: {
-    color: "#60a5fa",
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  deleteBtn: {
-    color: "#f87171",
-    marginLeft: 8,
-    fontSize: 14,
+    backgroundColor: "#60a5fa",
+    borderRadius: 8,
+    padding: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

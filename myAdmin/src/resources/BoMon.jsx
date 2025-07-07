@@ -23,7 +23,7 @@ export const BoMonList = () => (
     <Datagrid rowClick="edit">
       <TextField source="stt" label="STT" />
       <TextField source="TenBM" label="Tên Bộ Môn" />
-      <TextField source="MaKhoa" label="Mã Khoa" />
+      <TextField source="TenKhoa" label="Tên Khoa" />
       <EditButton />
     </Datagrid>
   </List>

@@ -16,8 +16,10 @@ import {
   NumberField,
   required,
   minValue,
-  ReferenceInput,
+    ReferenceInput,
   AutocompleteInput,
+  ReferenceField,
+  FunctionField,
 } from "react-admin";
 
 // Hàm tự động tạo mã giảng viên, mã lớp học phần, mã môn học (ví dụ: tự động tạo số tăng dần)
@@ -34,59 +36,90 @@ const getCurrentDate = () => {
 export const LopHocPhanList = () => (
   <List>
     <Datagrid rowClick="edit">
-      <TextField source="id" label="ID" />
+      <FunctionField label="STT" render={(record, index) => index + 1} />
       <TextField source="TenLHP" label="Tên LHP" />
       <DateField source="NgayTao" label="Ngày Tạo" />
       <NumberField source="HocKy" label="Học Kỳ" />
-      <NumberField source="ChinhSach" label="Chính Sách" />
+      {/* <NumberField source="ChinhSach" label="Chính Sách" /> */}
       <NumberField source="NamHoc" label="Năm Học" />
-      <NumberField source="MaGV" label="Mã GV" />
-      <NumberField source="MaLH" label="Mã Lớp Học" />
-      <NumberField source="MaMH" label="Mã Môn Học" />
-      <NumberField source="LuuTru" label="Lưu Trữ" />
-      <NumberField source="TrangThai" label="Trạng Thái" />
+      <ReferenceField source="MaGV" reference="giangvien" label="Tên giảng viên" link={false}>
+        <TextField source="TenGV" label="Tên Giảng Viên" />
+      </ReferenceField>
+      <ReferenceField source="MaLH" reference="lophoc" label="Lớp Học" link={false}>
+        <TextField source="tenLP" />
+      </ReferenceField>
+      <ReferenceField source="MaMH" reference="monhoc" label="Môn Học" link={false}>
+        <TextField source="TenMH" />
+      </ReferenceField>
+      {/* <NumberField source="LuuTru" label="Lưu Trữ" />
+      <NumberField source="TrangThai" label="Trạng Thái" /> */}
       <EditButton />
       <DeleteButton />
     </Datagrid>
   </List>
 );
 
+
 export const LopHocPhanEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="TenLHP" label="Tên LHP" validate={required()} />
+      <TextInput 
+        source="tenLHP" 
+        label="Tên LHP" 
+        validate={required("Tên LHP là bắt buộc")} // Đảm bảo rằng validate được truyền đúng
+      />
       <DateInput
-        source="NgayTao"
+        source="ngayTao"
         label="Ngày Tạo"
         defaultValue={getCurrentDate()} // Tự động điền ngày hiện tại
-        validate={[required(), minValue("1925-01-01", "Ngày tạo phải lớn hơn 1925")]}
+        validate={[
+          required("Ngày tạo là bắt buộc"), 
+          minValue("1925-01-01", "Ngày tạo phải lớn hơn 1925")
+        ]}
       />
       <NumberInput
-        source="HocKy"
+        source="hocKy"
         label="Học Kỳ"
-        validate={[required(), minValue(1, "Học kỳ phải lớn hơn 0")]}
+        validate={[
+          required("Học kỳ là bắt buộc"), 
+          minValue(1, "Học kỳ phải lớn hơn 0")
+        ]}
       />
-      <NumberInput source="ChinhSach" label="Chính Sách" validate={required()} />
-      <NumberInput source="NamHoc" label="Năm Học" validate={[required(), minValue(1900, "Năm học không hợp lệ")]} />
-
+      <NumberInput 
+        source="chinhSach" 
+        label="Chính Sách" 
+        validate={required("Chính sách là bắt buộc")}
+      />
+      <NumberInput
+        source="namHoc"
+        label="Năm Học"
+        validate={[
+          required("Năm học là bắt buộc"),
+          minValue(1900, "Năm học không hợp lệ")
+        ]}
+      />
       {/* ReferenceInput để lấy Mã Giảng Viên từ bảng GIANGVIEN */}
-      <ReferenceInput source="MaGV" reference="giangvien" label="Giảng viên">
+      <ReferenceInput source="maGV" reference="giangvien" label="Giảng viên">
         <AutocompleteInput optionText="TenGV" />
       </ReferenceInput>
 
       {/* ReferenceInput để lấy Mã Lớp Học từ bảng LOPHOC */}
-      <ReferenceInput source="MaLH" reference="lophoc" label="Lớp Học">
-        <AutocompleteInput optionText="TenLP" />
+      <ReferenceInput source="maLH" reference="lophoc" label="Lớp Học">
+        <AutocompleteInput optionText="tenLP" />
       </ReferenceInput>
 
       {/* ReferenceInput để lấy Mã Môn Học từ bảng MONHOC */}
-      <ReferenceInput source="MaMH" reference="monhoc" label="Môn Học">
+      <ReferenceInput source="maMH" reference="monhoc" label="Môn Học">
         <AutocompleteInput optionText="TenMH" />
       </ReferenceInput>
 
-      <NumberInput source="LuuTru" label="Lưu Trữ" validate={required()} />
+      <NumberInput 
+        source="luuTru" 
+        label="Lưu Trữ" 
+        validate={required("Lưu trữ là bắt buộc")}
+      />
       <NumberInput
-        source="TrangThai"
+        source="trangThai"
         label="Trạng Thái"
         defaultValue={1} // Tự động gán giá trị 'Hoạt động' (1)
       />

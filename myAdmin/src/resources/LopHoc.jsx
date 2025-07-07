@@ -1,8 +1,11 @@
 // src/resources/LopHoc.js
+
 import {
+
+
   List,
-  Datagrid,
   TextField,
+  Datagrid,
   TextInput,
   Edit,
   SimpleForm,
@@ -10,16 +13,20 @@ import {
   EditButton,
   ReferenceInput,
   AutocompleteInput,
-  FunctionField
+  FunctionField,
+  ReferenceField
 } from "react-admin";
 
 export const LopHocList = () => (
-  <List>
+   <List>
     <Datagrid rowClick="edit">
-      <FunctionField label="STT" render={(record, index) => index + 1} />
+      {/* <FunctionField label="STT" render={(record, index) => index + 1} /> */}
       <TextField source="maLop" label="Mã lớp" />
       <TextField source="tenLP" label="Tên lớp" />
-      <TextField source="maBM" label="Mã bộ môn" />
+      {/* Thay mã bộ môn thành tên bộ môn */}
+      <ReferenceField source="maBM" reference="bomon" label="Bộ môn" link={false}>
+        <TextField source="TenBM"/>
+      </ReferenceField>
       <EditButton />
     </Datagrid>
   </List>

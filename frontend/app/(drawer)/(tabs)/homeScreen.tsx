@@ -12,6 +12,8 @@ import {
 import { useAuth } from "../../../stores/useAuth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "@/constants/Link";
+import { LinearGradient } from "expo-linear-gradient"; // ADD
+
 type LopHocPhan = {
   id: number;
   tenLHP: string;
@@ -34,59 +36,55 @@ export default function HomeScreen() {
   };
 
   const fetchLHP = async () => {
-  try {
-    if (!user?.id) return;
+    try {
+      if (!user?.id) return;
+      const token = await AsyncStorage.getItem("token");
+      const isGV = user.role === 1;
+      const endpoint = isGV
+        ? `/api/giangvien/${user.id}/lophocphan`
+        : `/api/sinhvien/${user.id}/lophocphan`;
 
-    const token = await AsyncStorage.getItem("token");
-    console.log(user, "User data in HomeScreen")
-    const isGV = user.role === 1;
-    const endpoint = isGV
-      ? `/api/giangvien/${user.id}/lophocphan`
-      : `/api/sinhvien/${user.id}/lophocphan`;
+      const res = await fetch(`${BASE_URL}${endpoint}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  },
-});
+      const contentType = res.headers.get("content-type");
+      if (!res.ok || !contentType?.includes("application/json")) {
+        const text = await res.text();
+        throw new Error(`Unexpected response: ${text}`);
+      }
 
-const contentType = res.headers.get("content-type");
-if (!res.ok || !contentType?.includes("application/json")) {
-  const text = await res.text();
-  console.error("❌ Lỗi từ server:", text);
-  throw new Error(`Unexpected response: ${text}`);
-}
+      const data = await res.json();
 
-const data = await res.json();
-
-    const mapped = data.map((item: any) => ({
-      id: item.ID,
-      tenLHP: item.TenLHP,
-      hocKy: item.HocKy,
-      namHoc: item.NamHoc,
-      maGV: item.MaGV,
-      tenGV: item.TenGV || item.TenMH || "",
-      tenMH: item.TenMH || "",
-      maLop: item.MaLop || "",
-    }));
-    setLophocphan(mapped);
-  } catch (error) {
-    console.error("Fetch LHP error:", error);
-  }
-};
-
+      const mapped = data.map((item: any) => ({
+        id: item.ID,
+        tenLHP: item.TenLHP,
+        hocKy: item.HocKy,
+        namHoc: item.NamHoc,
+        maGV: item.MaGV,
+        tenGV: item.TenGV || item.TenMH || "",
+        tenMH: item.TenMH || "",
+        maLop: item.MaLop || "",
+      }));
+      setLophocphan(mapped);
+    } catch (error) {
+      console.error("Fetch LHP error:", error);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
-      await checkLogin(); // Khôi phục thông tin từ AsyncStorage
+      await checkLogin();
     };
     init();
   }, []);
 
   useEffect(() => {
     if (user?.id) {
-      fetchLHP(); // chỉ gọi khi đã có user
+      fetchLHP();
     }
   }, [user]);
 
@@ -94,22 +92,22 @@ const data = await res.json();
     if (user?.email) return user.email.charAt(0).toUpperCase();
     return "U";
   };
-  console.log(lophocphan);
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Ionicons
           name="menu"
-          size={24}
+          size={26}
           color="white"
           onPress={() => navigation.openDrawer()}
         />
         <Text style={styles.title}>
-          <Text style={{ fontWeight: "500" }}>CKC</Text> Classroom
+          <Text style={{ fontWeight: "700" }}>CKC</Text> Classroom
         </Text>
         <View style={styles.avatar}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
+          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 17 }}>
             {getInitial()}
           </Text>
         </View>
@@ -121,19 +119,28 @@ const data = await res.json();
         />
       </View>
 
-      {/* Weekly Box */}
-      <View style={styles.weekBox}>
+      {/* Weekly Box - LinearGradient */}
+      <LinearGradient
+        colors={["#6e81f3", "#a6b5fa"]}
+        style={styles.weekBox}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+      >
         <View style={styles.weekContent}>
-          <Text style={{ color: "#fff", fontSize: 20 }}>Tuần này</Text>
-          <Text style={{ color: "#fff" }}>Hiện không có bài tập nào</Text>
+          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
+            Tuần này
+          </Text>
+          <Text style={{ color: "#fff", fontSize: 13, marginTop: 3 }}>
+            Hiện không có bài tập nào
+          </Text>
         </View>
         <TouchableOpacity>
           <Text style={styles.link}>Xem danh sách việc cần làm</Text>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       {/* Class Cards */}
-      <ScrollView style={styles.scroll}>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {lophocphan.length === 0 ? (
           <Text style={{ color: "white", textAlign: "center", marginTop: 20 }}>
             Không có lớp học phần nào.
@@ -143,6 +150,7 @@ const data = await res.json();
             <TouchableOpacity
               key={cls.id}
               style={styles.card}
+              activeOpacity={0.82}
               onPress={() =>
                 router.push({
                   pathname:
@@ -154,6 +162,7 @@ const data = await res.json();
               <Image
                 source={require("../../../assets/images/icon.png")}
                 style={styles.bgImage}
+                blurRadius={2}
               />
               <View style={styles.overlay} />
               <View style={styles.cardContent}>
@@ -182,97 +191,135 @@ const data = await res.json();
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111",
-    paddingTop: 22,
-    paddingHorizontal: 16,
+    backgroundColor: "#141927",
+    paddingTop: 30,
+    paddingHorizontal: 12,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 22,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(36,37,86,0.98)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "300",
-    color: "white",
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#fff",
+    letterSpacing: 0.5,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#4f46e5",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#6e81f3",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#6e81f3",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 5,
   },
   weekBox: {
-    borderWidth: 1,
-    borderColor: "#9e9696",
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 20,
     flexDirection: "row",
-    justifyContent: "space-around",
-    height: 100,
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#6e81f3",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    elevation: 4,
   },
   weekContent: {
     flexDirection: "column",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: 4,
   },
   link: {
-    color: "#60a5fa",
-    fontSize: 12,
-    fontWeight: "500",
-    marginTop: 8,
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    backgroundColor: "#3b60f3",
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    borderRadius: 8,
+    overflow: "hidden",
+    marginTop: 7,
   },
   scroll: {
     flex: 1,
   },
   card: {
-    height: 120,
-    borderRadius: 12,
-    marginBottom: 16,
+    height: 125,
+    borderRadius: 18,
+    marginBottom: 20,
     overflow: "hidden",
     position: "relative",
-    flex: 1,
-    justifyContent: "space-around",
-  },
-  classInfo: {
-    flexDirection: "column",
-    marginBottom: 30,
+    justifyContent: "flex-end",
+    backgroundColor: "#242556",
+    shadowColor: "#242556",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 7,
   },
   bgImage: {
     width: "100%",
     height: "100%",
     position: "absolute",
     resizeMode: "cover",
+    opacity: 0.3,
   },
   overlay: {
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(36,37,86,0.6)",
     ...StyleSheet.absoluteFillObject,
   },
   cardContent: {
     position: "absolute",
-    bottom: 10,
-    left: 16,
+    bottom: 16,
+    left: 20,
+    right: 30,
+  },
+  classInfo: {
+    flexDirection: "column",
+    marginBottom: 7,
   },
   className: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#fff",
-    fontWeight: "bold",
+    fontWeight: "700",
+    letterSpacing: 0.4,
+    marginBottom: 2,
   },
   subject: {
-    color: "#ddd",
-    fontSize: 12,
+    color: "#d3dafc",
+    fontSize: 13,
+    fontWeight: "400",
+    marginTop: 4,
   },
   term: {
-    color: "#bbb",
-    fontSize: 12,
+    color: "#b1bcfa",
+    fontSize: 13,
     fontStyle: "italic",
+    marginTop: 0,
   },
   cardMenu: {
     position: "absolute",
-    top: 8,
-    right: 8,
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(45, 47, 95, 0.7)",
+    borderRadius: 13,
+    padding: 4,
   },
 });

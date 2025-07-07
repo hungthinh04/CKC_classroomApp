@@ -23,7 +23,7 @@ import {
   LopHocPhanEdit,
   LopHocPhanList,
 } from "./resources/LopHocPhan";
-
+import './css/styles.css'; // Import custom styles
 const dataProvider = simpleRestProvider("http://localhost:3000/admin");
 
 function App() {

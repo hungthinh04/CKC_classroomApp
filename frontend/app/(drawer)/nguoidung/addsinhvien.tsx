@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, Text, TextInput, Button, Alert, StyleSheet } from "react-native";
+import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "@/constants/Link";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function MoiGiangVienScreen() {
   const { maLHP } = useLocalSearchParams();
@@ -10,7 +11,7 @@ export default function MoiGiangVienScreen() {
 
   const handleInvite = async () => {
     if (!email) {
-      Alert.alert("⚠️ Vui lòng nhập email giảng viên");
+      Alert.alert("⚠️ Vui lòng nhập email sinh viên");
       return;
     }
 
@@ -41,28 +42,69 @@ export default function MoiGiangVienScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>📧 Nhập email giảng viên:</Text>
+      <Text style={styles.label}>📧 Nhập email sinh viên:</Text>
       <TextInput
         style={styles.input}
         value={email}
         onChangeText={setEmail}
-        placeholder="giangvien@example.com"
+        placeholder="sinhvien@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
       />
-      <Button title="📨 Mời" onPress={handleInvite} />
+
+      {/* Nút mời sinh viên */}
+      <TouchableOpacity
+        style={[
+          styles.button,
+          { backgroundColor: email ? "#6EC1E4" : "#D1EAF9" },
+        ]}
+        onPress={handleInvite}
+        disabled={!email}
+      >
+        <Ionicons name="mail" size={18} color="#fff" style={styles.icon} />
+        <Text style={styles.buttonText}> Mời sinh viên</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#fff", flex: 1 },
-  label: { fontWeight: "bold", marginBottom: 8 },
+  container: {
+    flex: 1,
+    backgroundColor: "#f4f7fc",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  label: {
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#333",
+    fontSize: 16,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 8,
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 20,
+    fontSize: 16,
+    backgroundColor: "#fff",
+    color: "#333",
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  icon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "bold",
   },
 });

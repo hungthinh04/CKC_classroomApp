@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { BASE_URL } from "@/constants/Link";
+import { Pressable } from "react-native";
 import {
   Alert,
   Image,
@@ -49,6 +50,8 @@ export default function LopHocPhanDetail() {
   const maLHP = parseInt(MaLHP as string);
   const [baiViet, setBaiViet] = useState<BaiViet[]>([]);
   const { user } = useAuth();
+const [showMenuId, setShowMenuId] = useState<number | null>(null);
+
   const fetchData = async () => {
     try {
       const res = await fetch(`${BASE_URL}/lophocphan/${id}`);
@@ -66,10 +69,7 @@ export default function LopHocPhanDetail() {
 
   const handleDelete = (id: number) => {
     Alert.alert("Xác nhận xóa", "Bạn có chắc chắn muốn xóa bài viết này?", [
-      {
-        text: "Hủy",
-        style: "cancel",
-      },
+      { text: "Hủy", style: "cancel" },
       {
         text: "Xóa",
         style: "destructive",
@@ -87,7 +87,7 @@ export default function LopHocPhanDetail() {
             const result = await res.json();
             if (res.ok) {
               alert("✅ Đã xóa bài viết");
-              fetchData(); // làm mới lại danh sách
+              fetchData();
             } else {
               alert("❌ Xóa thất bại: " + result.message);
             }
@@ -106,12 +106,9 @@ export default function LopHocPhanDetail() {
     }, [id])
   );
 
-  // if (!lop) return null;
-  console.log(id, tenLHP, baiViet);
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header lớp */}
-
       <View style={styles.header}>
         <Image
           source={require("../../../../../../assets/images/icon.png")}
@@ -131,151 +128,284 @@ export default function LopHocPhanDetail() {
         </View>
       </View>
 
-      {/* Danh sách bài viết */}
+      {/* Nút tạo thông báo mới */}
       <TouchableOpacity
         style={styles.newPostBtn}
         onPress={() => router.push(`/tao/taobaiviet?maLHP=${id}`)}
+        activeOpacity={0.88}
       >
-        <Text style={{ color: "white", fontWeight: "bold" }}>
-          <Ionicons
-            name="pencil"
-            size={13}
-            style={{ width: 20 }}
-            color="white"
-          />{" "}
-          Thông báo mới
-        </Text>
+        <Ionicons name="pencil" size={18} color="white" />
+        <Text style={styles.newPostBtnText}>Thông báo mới</Text>
       </TouchableOpacity>
-      {baiViet.filter((bv) => bv.LoaiBV === 0).length === 0 ? (
-        <Text style={{ textAlign: "center", color: "#666" }}>
-          Chưa có bài viết nào.
-        </Text>
-      ) : (
-        baiViet
-          .filter((bv) => bv.LoaiBV === 0) // 👈 Chỉ lấy bài viết LoaiBV === 0
-          .map((bv) => (
-            <TouchableOpacity
-              key={bv.ID}
-              style={styles.postCard}
-              onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
-            >
-              <View style={styles.postHeader}>
-                <View style={styles.avatar}>
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                    {user?.email?.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View>
-                  <Text style={styles.postDate}>
-                    {bv.NgayTao
-                      ? new Date(bv.NgayTao).toLocaleDateString("vi-VN")
-                      : "Không rõ"}
-                  </Text>
-                </View>
+
+      {/* Danh sách bài viết */}
+      <Text style={styles.sectionTitle}>Thông báo lớp</Text>
+      {baiViet
+      .filter((bv) => bv.LoaiBV === 0)
+      .map((bv) => (
+        <View key={bv.ID} style={styles.postCard}>
+          {/* Dấu ba chấm tuyệt đối góc phải trên */}
+          <TouchableOpacity
+            style={styles.ellipsisBtn}
+            onPress={() => setShowMenuId(showMenuId === bv.ID ? null : bv.ID)}
+            hitSlop={12}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color="#8e97be" />
+          </TouchableOpacity>
+
+          {/* Card clickable cho Xem chi tiết */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={{ flex: 1 }}
+            onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
+          >
+            <View style={styles.postHeader}>
+              <View style={styles.avatar}>
+                <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+                  {bv.HoGV ? bv.HoGV.charAt(0).toUpperCase() : "U"}
+                </Text>
               </View>
-              <Text style={styles.postTitle}>{bv.TieuDe}</Text>
-              <Text style={styles.postContent}>{bv.NoiDung}</Text>
-              <TouchableOpacity
-                style={{ marginTop: 8 }}
-                onPress={() => handleDelete(bv.ID)}
-              >
-                <Text style={{ color: "red" }}>🗑 Xóa bài viết</Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          ))
-      )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.postAuthor}>
+                  {bv.HoGV} {bv.TenGV}
+                </Text>
+                <Text style={styles.postDate}>
+                  {bv.NgayTao
+                    ? new Date(bv.NgayTao).toLocaleDateString("vi-VN")
+                    : "Không rõ"}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.postTitle}>{bv.TieuDe}</Text>
+            <Text style={styles.postContent}>{bv.NoiDung}</Text>
+          </TouchableOpacity>
+
+          {/* Menu popover khi bấm dấu ba chấm */}
+          {showMenuId === bv.ID && (
+  <>
+    {/* Lớp phủ toàn màn hình để bắt sự kiện bấm ngoài menu */}
+    <Pressable
+      style={StyleSheet.absoluteFill}
+      onPress={() => setShowMenuId(null)}
+    />
+    <View style={styles.menuPopover}>
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() => {
+          setShowMenuId(null);
+          router.push(`../../../../(bv)/baiviet/edit/${bv.ID}`);
+        }}
+      >
+        <Ionicons name="create-outline" size={17} color="#4666ec" />
+        <Text style={styles.menuText}>Sửa bài viết</Text>
+      </TouchableOpacity>
+      <View style={styles.menuDivider} />
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() => {
+          setShowMenuId(null);
+          handleDelete(bv.ID);
+        }}
+      >
+        <Ionicons name="trash-outline" size={17} color="#d92626" />
+        <Text style={[styles.menuText, { color: "#d92626" }]}>Xóa bài viết</Text>
+      </TouchableOpacity>
+    </View>
+  </>
+)}
+        </View>
+      ))}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: "#eef1fa",
     flex: 1,
-    padding: 12,
+    padding: 0,
   },
   header: {
-    backgroundColor: "#e0e7ff",
-    borderRadius: 10,
+    backgroundColor: "#6e81f3",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     overflow: "hidden",
-    marginBottom: 16,
+    marginBottom: 18,
+    elevation: 8,
+    shadowColor: "#6e81f3",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.13,
+    shadowRadius: 16,
   },
   coverImg: {
-    height: 100,
+    height: 110,
     width: "100%",
     resizeMode: "cover",
+    opacity: 0.25,
+    position: "absolute",
+    top: 0,
+    left: 0,
   },
   headerContent: {
-    padding: 12,
+    padding: 22,
+    paddingTop: 46,
   },
   className: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 7,
+    letterSpacing: 0.3,
   },
   classMeta: {
-    color: "#555",
+    color: "#d1dcfc",
+    fontSize: 14,
+    marginBottom: 2,
+    fontWeight: "400",
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: "700",
+    marginHorizontal: 20,
+    marginTop: 5,
+    marginBottom: 7,
+    color: "#243665",
+  },
+  newPostBtn: {
+    flexDirection: "row",
+    backgroundColor: "#4666ec",
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 20,
+    marginTop: -28,
+    marginBottom: 15,
+    shadowColor: "#4666ec",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 7,
+    elevation: 5,
+    gap: 7,
+  },
+  newPostBtnText: {
+    color: "#fff",
     fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 16,
+    marginLeft: 4,
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#8c98c5",
+    fontSize: 15,
+    marginTop: 25,
   },
   postCard: {
-    backgroundColor: "#f3f4f6",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 15,
+    marginHorizontal: 20,
+    marginBottom: 15,
+    elevation: 4,
+    shadowColor: "#243665",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
   },
+  ellipsisBtn: {
+  position: "absolute",
+  top: 9,
+  right: 9,
+  padding: 4,
+  zIndex: 5,
+},
+
+menuPopover: {
+  position: "absolute",
+  top: 38,
+  right: 10,
+  backgroundColor: "#fff",
+  borderRadius: 10,
+  elevation: 10,
+  shadowColor: "#4666ec",
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.17,
+  shadowRadius: 7,
+  minWidth: 122,
+  paddingVertical: 7,
+  zIndex: 10,
+},
+menuItem: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingVertical: 9,
+  paddingHorizontal: 17,
+},
+menuText: {
+  fontSize: 14.5,
+  marginLeft: 7,
+  color: "#273262",
+  fontWeight: "600",
+},
+menuDivider: {
+  height: 1,
+  backgroundColor: "#f0f1f6",
+  marginHorizontal: 10,
+},
+
   postHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 7,
+    gap: 8,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#4f46e5",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#4666ec",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
+    marginRight: 7,
+    shadowColor: "#4666ec",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.19,
+    shadowRadius: 4,
+    elevation: 2,
   },
-
-  newPostBtn: {
-    backgroundColor: "#6a63ee",
-    paddingVertical: 12,
-    borderRadius: 16,
-    alignItems: "center",
-    marginTop: 16,
-  },
-
   postAuthor: {
-    fontWeight: "bold",
+    fontWeight: "600",
+    fontSize: 14.5,
+    color: "#283971",
+    marginBottom: 1,
   },
   postDate: {
     fontSize: 12,
-    color: "#666",
+    color: "#8e97be",
+    fontWeight: "400",
   },
   postTitle: {
     fontWeight: "bold",
-    fontSize: 15,
-    marginTop: 4,
+    fontSize: 16.5,
+    marginTop: 2,
+    color: "#273262",
   },
   postContent: {
     marginTop: 6,
-    fontSize: 13,
-    color: "#333",
+    fontSize: 14,
+    color: "#3b415a",
+    lineHeight: 19,
   },
-  fab: {
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-    backgroundColor: "#4f46e5",
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  deleteBtn: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
+    marginTop: 13,
+    gap: 3,
+  },
+  deleteBtnText: {
+    color: "#d92626",
+    fontSize: 13.5,
+    fontWeight: "600",
+    marginLeft: 2,
   },
 });

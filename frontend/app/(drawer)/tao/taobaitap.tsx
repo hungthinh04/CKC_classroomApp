@@ -1,21 +1,21 @@
 import { useState } from "react";
-import axios from "axios";
 import {
   View,
   Text,
   TextInput,
-  Button,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Platform,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { BASE_URL } from "@/constants/Link";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import * as FileSystem from "expo-file-system";
-import { useLocalSearchParams, router } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
+import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
+import { BASE_URL } from "@/constants/Link";
+import axios from "axios";
 
 export default function TaoBaiTapScreen() {
   const { loaiBV = "1", maLHP } = useLocalSearchParams();
@@ -45,6 +45,7 @@ function BaseForm({
   const [hanNop, setHanNop] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tep, setTep] = useState<any>(null);
+  const [sending, setSending] = useState(false);
 
   const chonTep = async () => {
     const res = await DocumentPicker.getDocumentAsync({ type: "*/*" });
@@ -54,10 +55,9 @@ function BaseForm({
       const originalUri = asset.uri;
       const fileName = asset.name || `tep-${Date.now()}`;
       const newPath =
-        FileSystem.documentDirectory + encodeURIComponent(fileName); // tránh lỗi tên
+        FileSystem.documentDirectory + encodeURIComponent(fileName);
 
       try {
-        // Copy file từ content:// hoặc uri lạ sang file://
         await FileSystem.copyAsync({
           from: originalUri,
           to: newPath,
@@ -65,7 +65,7 @@ function BaseForm({
 
         setTep({
           ...asset,
-          uri: newPath, // ✅ uri chuẩn, luôn file://
+          uri: newPath,
           name: fileName,
         });
       } catch (err) {
@@ -76,8 +76,17 @@ function BaseForm({
   };
 
   const handleSubmit = async () => {
-    const formData = new FormData();
+    if (!tieuDe.trim()) {
+      Alert.alert("Chưa nhập tiêu đề");
+      return;
+    }
+    if (!noiDung.trim()) {
+      Alert.alert("Chưa nhập nội dung");
+      return;
+    }
 
+    setSending(true);
+    const formData = new FormData();
     formData.append("TieuDe", tieuDe);
     formData.append("NoiDung", noiDung);
     formData.append("MaLHP", maLHP || "");
@@ -96,23 +105,6 @@ function BaseForm({
 
     try {
       const token = await AsyncStorage.getItem("token");
-      console.log("token", token);
-      console.log("📡 Gửi tới:", "${BASE_URL}/baiviet/tao");
-      console.log("📎 file:", tep);
-      console.log("📤 form:", formData);
-      console.log("📎 File uri:", tep.uri);
-      console.log("📤 FormData:", formData);
-      console.log("🧾 TieuDe :", tieuDe);
-      console.log("🧾 NoiDung :", noiDung);
-      console.log("🧾 MaLHP :", maLHP || "");
-      console.log("🧾 LoaiBV :", loaiBV.toString());
-      console.log("🧾 MaCD :", "1");
-      console.log("🧾 GioKetThuc :", new Date().toISOString());
-      console.log("🧾 NgayKetThuc :", hanNop.toISOString());
-      if (tep) {
-        console.log("🧾 file :", tep);
-      }
-
       const res = await axios.post(`${BASE_URL}/baiviet/tao`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -130,76 +122,113 @@ function BaseForm({
           `${submitLabel} thành công${fileUrl ? `\nFile: ${fileUrl}` : ""}`,
           [
             {
-              text: "Xem bài tập",
+              text: "Xem danh sách",
               onPress: () => {
-                // tuỳ bạn, hoặc chuyển trang
                 router.back();
               },
             },
           ]
         );
+        setTieuDe("");
+        setNoiDung("");
+        setTep(null);
       } else {
         Alert.alert("❌ Thất bại", res.data.message || "Có lỗi xảy ra");
       }
     } catch (err) {
       console.error("❌ Lỗi gửi bài:", err);
       Alert.alert("Lỗi", "Không thể kết nối đến máy chủ");
+    } finally {
+      setSending(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>{title}</Text>
+    <View style={styles.bg}>
+      <View style={styles.card}>
+        <Text style={styles.header}>{title}</Text>
 
-      <Text style={styles.label}>Tiêu đề</Text>
-      <TextInput
-        style={styles.input}
-        value={tieuDe}
-        onChangeText={setTieuDe}
-        placeholder="Nhập tiêu đề..."
-      />
+        <Text style={styles.label}>Tiêu đề</Text>
+        <TextInput
+          style={styles.input}
+          value={tieuDe}
+          onChangeText={setTieuDe}
+          placeholder="Nhập tiêu đề..."
+          placeholderTextColor="#abb0be"
+        />
 
-      <Text style={styles.label}>Nội dung</Text>
-      <TextInput
-        style={[styles.input, { height: 100 }]}
-        value={noiDung}
-        onChangeText={setNoiDung}
-        multiline
-        placeholder="Nhập mô tả..."
-      />
+        <Text style={styles.label}>Nội dung</Text>
+        <TextInput
+          style={[styles.input, { minHeight: 90, maxHeight: 170 }]}
+          value={noiDung}
+          onChangeText={setNoiDung}
+          multiline
+          placeholder="Nhập mô tả..."
+          placeholderTextColor="#abb0be"
+        />
 
-      <Text style={styles.label}>Hạn nộp</Text>
-      <TouchableOpacity
-        onPress={() => setShowDatePicker(true)}
-        style={{ marginTop: 16 }}
-      >
-        <Text style={{ color: "blue" }}>
-          {hanNop
-            ? `📅 Thời gian đến hạn: ${hanNop.toLocaleString("vi-VN")}`
-            : "📅 Đặt thời gian đến hạn"}
-        </Text>
-      </TouchableOpacity>
+        <Text style={styles.label}>Hạn nộp</Text>
+        <TouchableOpacity
+          style={styles.dateBtn}
+          onPress={() => setShowDatePicker(true)}
+          activeOpacity={0.83}
+        >
+          <Ionicons name="calendar-outline" size={19} color="#4666ec" />
+          <Text style={styles.dateBtnText}>
+            {hanNop
+              ? ` ${hanNop.toLocaleString("vi-VN")}`
+              : " Đặt thời gian đến hạn"}
+          </Text>
+        </TouchableOpacity>
 
-      <DateTimePickerModal
-        isVisible={showDatePicker}
-        mode="datetime"
-        date={hanNop || new Date()}
-        is24Hour={true}
-        onConfirm={(date) => {
-          setShowDatePicker(false);
-          setHanNop(date);
-        }}
-        onCancel={() => setShowDatePicker(false)}
-      />
+        <DateTimePickerModal
+          isVisible={showDatePicker}
+          mode="datetime"
+          date={hanNop || new Date()}
+          is24Hour={true}
+          onConfirm={(date) => {
+            setShowDatePicker(false);
+            setHanNop(date);
+          }}
+          onCancel={() => setShowDatePicker(false)}
+          minimumDate={new Date()} // Không cho chọn ngày trong quá khứ
+        />
 
-      <TouchableOpacity onPress={chonTep} style={{ marginTop: 12 }}>
-        <Text style={{ color: "blue" }}>
-          {tep ? `📎 ${tep.name}` : "📎 Chọn tệp đính kèm"}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.attachBtn}
+          onPress={chonTep}
+          activeOpacity={0.86}
+        >
+          <Ionicons name="attach" size={18} color="#1d4ed8" />
+          <Text style={styles.attachText}>
+            {tep ? ` ${tep.name}` : " Chọn tệp đính kèm"}
+          </Text>
+        </TouchableOpacity>
 
-      <View style={{ marginTop: 20 }}>
-        <Button title={submitLabel} onPress={handleSubmit} />
+        <TouchableOpacity
+          style={[
+            styles.submitBtn,
+            {
+              backgroundColor:
+                !tieuDe.trim() || !noiDung.trim() || sending
+                  ? "#b2c4f4"
+                  : "#4666ec",
+            },
+          ]}
+          onPress={handleSubmit}
+          disabled={!tieuDe.trim() || !noiDung.trim() || sending}
+          activeOpacity={0.88}
+        >
+          <Ionicons
+            name="cloud-upload-outline"
+            size={20}
+            color="#fff"
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.submitBtnText}>
+            {sending ? "Đang gửi..." : submitLabel}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -250,14 +279,102 @@ function FormTaiLieu({ maLHP }: { maLHP?: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
-  header: { fontSize: 18, fontWeight: "bold", marginBottom: 16 },
-  label: { fontWeight: "bold", marginTop: 12 },
+  bg: {
+    flex: 1,
+    backgroundColor: "#f5f7fb",
+    justifyContent: "center",
+    paddingHorizontal: 0,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    margin: 16,
+    padding: 18,
+    shadowColor: "#4666ec",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.13,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  header: {
+    fontSize: 20,
+    color: "#243665",
+    fontWeight: "bold",
+    marginBottom: 16,
+    letterSpacing: 0.2,
+    textAlign: "center",
+  },
+  label: {
+    color: "#465980",
+    fontWeight: "600",
+    marginBottom: 7,
+    fontSize: 15,
+    marginLeft: 1,
+    marginTop: 9,
+  },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 4,
+    borderWidth: 0,
+    backgroundColor: "#f4f7fc",
+    color: "#242b3a",
+    paddingHorizontal: 15,
+    paddingVertical: 11,
+    borderRadius: 9,
+    fontSize: 16,
+    marginBottom: 7,
+    shadowColor: "#b4bdfc",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.09,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  dateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e4e9fa",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 13,
+    alignSelf: "flex-start",
+    marginBottom: 4,
+    marginTop: 2,
+  },
+  dateBtnText: {
+    color: "#4666ec",
+    fontWeight: "600",
+    fontSize: 15,
+    marginLeft: 4,
+  },
+  attachBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e7edfa",
+    borderRadius: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    alignSelf: "flex-start",
+    marginTop: 8,
+    marginBottom: 9,
+  },
+  attachText: {
+    color: "#273262",
+    fontWeight: "600",
+    fontSize: 15,
+    marginLeft: 7,
+  },
+  submitBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 11,
+    paddingVertical: 14,
+    justifyContent: "center",
+    marginTop: 22,
+    elevation: 2,
+    marginBottom: 6,
+  },
+  submitBtnText: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
 });
