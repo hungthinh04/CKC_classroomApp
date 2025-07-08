@@ -64,6 +64,10 @@ export default function RootLayout() {
         name="(class)/lopHocPhan/[id]"
         options={{ drawerItemStyle: { display: "none" } }}
       />
+      <Drawer.Screen
+        name="profile/[id]"
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
     </Drawer>
   );
 }

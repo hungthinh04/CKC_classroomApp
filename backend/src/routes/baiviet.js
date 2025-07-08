@@ -34,11 +34,13 @@ router.delete("/:id", auth, checkGiangVien, controller.deleteBaiViet);
 // router.post("/nopbai", controller.nopBai);
 router.post("/nopbai", auth, upload.single("file"), controller.nopBai);
 router.get('/chitiet/:id', controller.getBaiVietById);
-
+router.delete("/bainop/:id", controller.deleteBaiNop);
 
 router.get("/:id/comments", controllerComment.getCommentsByPostId);
 
 // Gửi comment mới (phải đăng nhập)
 router.post("/:id/comment", verifyToken, controllerComment.postComment);
+router.get('/baiviet/canlam/:maSV', controller.getBaiTapCanLam);
+
 
 module.exports = router;

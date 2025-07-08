@@ -456,27 +456,34 @@ exports.addBoMon = async (req, res) => {
   }
 };
 
-exports.deleteBoMon = async (req, res) => {
-  const { id } = req.params;
-
+exports.deleteBoMon = async (id) => {
   try {
+    // Bước 1: Kiểm tra xem có bản ghi nào tham chiếu trong bảng NHANXET không
+    const checkRecords = await pool
+      .request()
+      .input("ID", sql.Int, id)
+      .query("SELECT * FROM NHANXET WHERE MaBV = @ID");
+
+    if (checkRecords.recordset.length > 0) {
+      // Bước 2: Xóa các bản ghi trong NHANXET
+      await pool
+        .request()
+        .input("ID", sql.Int, id)
+        .query("DELETE FROM NHANXET WHERE MaBV = @ID");
+    }
+
+    // Bước 3: Xóa bản ghi trong BOMON
     await pool
       .request()
       .input("ID", sql.Int, id)
-      .query(`DELETE FROM BOMON WHERE ID = @ID`);
+      .query("DELETE FROM BOMON WHERE ID = @ID");
 
-    await pool.request().query(`
-      DECLARE @MaxID INT;
-      SELECT @MaxID = ISNULL(MAX(ID), 0) FROM BOMON;
-      DBCC CHECKIDENT ('BOMON', RESEED, @MaxID);
-    `);
-
-    res.status(200).json({ message: "Bộ môn đã được xóa" });
+    console.log("Bộ môn đã được xóa và các bản ghi liên quan trong NHANXET đã được xóa.");
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Không thể xóa bộ môn" });
+    console.error("Lỗi khi xóa bộ môn:", err);
   }
 };
+
 
 exports.addMonHoc = async (req, res) => {
   const { tenMH, tinChi, maBM } = req.body;

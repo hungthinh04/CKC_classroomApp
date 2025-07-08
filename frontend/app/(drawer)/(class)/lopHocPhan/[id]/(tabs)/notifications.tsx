@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BASE_URL } from "@/constants/Link";
+import { useAuth } from "@/stores/useAuth";
 
 type BaiViet = {
   id: number;
@@ -32,6 +33,7 @@ type BaiViet = {
 
 export default function BaiTapScreen() {
   const { id } = useLopHocPhan();
+    const { user } = useAuth();
   const [tasks, setTasks] = useState<BaiViet[]>([]);
   const [showModal, setShowModal] = useState(false);
 
@@ -108,68 +110,56 @@ export default function BaiTapScreen() {
             Không có bài tập nào!
           </Text>
         }
-        renderItem={({ item }) => {
-          const fileUrl = item.duongDanFile
-            ? `${BASE_URL}${item.duongDanFile}`
-            : null;
-          const isImage = fileUrl?.match(/\.(jpg|jpeg|png)$/i);
-
-          return (
-            <View style={styles.card}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text style={styles.title}>
-                  <Ionicons name="reader-outline" size={17} color="#4666ec" />{" "}
-                  {item.tieuDe || "📝 Không có tiêu đề"}
-                </Text>
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={styles.title}>
+                <Ionicons name="reader-outline" size={17} color="#4666ec" />{" "}
+                {item.tieuDe || "📝 Không có tiêu đề"}
+              </Text>
+              {user?.role === 1 && (  // Chỉ hiển thị nút xóa nếu user là giáo viên
                 <TouchableOpacity onPress={() => handleDelete(item.id)} hitSlop={10}>
                   <Ionicons name="trash-outline" size={20} color="#f87171" />
                 </TouchableOpacity>
-              </View>
-              <Text style={styles.meta}>Mã: <Text style={{ color: "#4666ec" }}>{item.maBaiViet}</Text></Text>
-              <Text style={styles.meta}>
-                <Ionicons name="calendar-outline" size={13} color="#b5badb" /> Ngày tạo:{" "}
-                {item.ngayTao?.slice(0, 10) || "Chưa có"}
-              </Text>
-              <Text style={styles.meta}>
-                <Ionicons name="alarm-outline" size={13} color="#fbbf24" /> Hạn nộp:{" "}
-                {item.ngayKetThuc?.slice(0, 10) || "Không rõ"}
-              </Text>
-              <Text style={styles.content}>{item.noiDung}</Text>
-
-              {/* Preview file đính kèm */}
-              {isImage ? (
-                <Image
-                  source={{ uri: fileUrl }}
-                  style={styles.attachImage}
-                  resizeMode="cover"
-                />
-              ) : fileUrl && (
-                <TouchableOpacity
-                  onPress={() => Linking.openURL(fileUrl)}
-                  style={styles.attachBtn}
-                >
-                  {fileIcon(fileUrl)}
-                  <Text style={styles.attachText}>Xem file đính kèm</Text>
-                </TouchableOpacity>
               )}
-
-              <TouchableOpacity
-                style={styles.detailBtn}
-                onPress={() => router.push(`/baitap/${item.id}`)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="open-outline" size={18} color="#4666ec" />
-                <Text style={styles.detailBtnText}>Xem chi tiết</Text>
-              </TouchableOpacity>
             </View>
-          );
-        }}
+            <Text style={styles.meta}>Mã: <Text style={{ color: "#4666ec" }}>{item.maBaiViet}</Text></Text>
+            <Text style={styles.meta}>
+              <Ionicons name="calendar-outline" size={13} color="#b5badb" /> Ngày tạo:{" "}
+              {item.ngayTao?.slice(0, 10) || "Chưa có"}
+            </Text>
+            <Text style={styles.meta}>
+              <Ionicons name="alarm-outline" size={13} color="#fbbf24" /> Hạn nộp:{" "}
+              {item.ngayKetThuc?.slice(0, 10) || "Không rõ"}
+            </Text>
+            <Text style={styles.content}>{item.noiDung}</Text>
+
+            {/* Preview file đính kèm */}
+            {item.duongDanFile && (
+              <TouchableOpacity onPress={() => Linking.openURL(`${BASE_URL}${item.duongDanFile}`)} style={styles.attachBtn}>
+                <Ionicons name="attach" size={18} color="#b191ff" />
+                <Text style={styles.attachText}>Xem file đính kèm</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={styles.detailBtn}
+              onPress={() => router.push(`/baitap/${item.id}`)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="open-outline" size={18} color="#4666ec" />
+              <Text style={styles.detailBtnText}>Xem chi tiết</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       />
 
-      {/* Floating Add Button */}
-      <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
-        <Ionicons name="add-circle" size={58} color="#4666ec" style={{ elevation: 8 }} />
-      </TouchableOpacity>
+      {/* Floating Add Button - chỉ hiển thị nếu user là giáo viên */}
+      {user?.role === 1 && (
+        <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
+          <Ionicons name="add-circle" size={58} color="#4666ec" style={{ elevation: 8 }} />
+        </TouchableOpacity>
+      )}
 
       {/* Modal chọn loại bài đăng */}
       <Modal
@@ -181,20 +171,12 @@ export default function BaiTapScreen() {
         <Pressable style={styles.modalOverlay} onPress={() => setShowModal(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Tạo bài mới</Text>
-            {[
-              { label: "📝 Bài tập", type: 1 },
-              { label: "📋 Bài kiểm tra", type: 2 },
-              { label: "❓ Câu hỏi", type: 0 },
-              { label: "📚 Tài liệu", type: 3 },
-            ].map((item, index) => (
-              <Pressable
-                key={index}
-                style={styles.optionButton}
-                onPress={() => handleCreate(item.type)}
-              >
-                <Text style={styles.optionText}>{item.label}</Text>
-              </Pressable>
-            ))}
+            {[{ label: "📝 Bài tập", type: 1 }, { label: "📋 Bài kiểm tra", type: 2 }, { label: "❓ Câu hỏi", type: 0 }, { label: "📚 Tài liệu", type: 3 }]
+              .map((item, index) => (
+                <Pressable key={index} style={styles.optionButton} onPress={() => handleCreate(item.type)}>
+                  <Text style={styles.optionText}>{item.label}</Text>
+                </Pressable>
+              ))}
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <Text style={styles.cancelBtn}>Huỷ</Text>
             </TouchableOpacity>

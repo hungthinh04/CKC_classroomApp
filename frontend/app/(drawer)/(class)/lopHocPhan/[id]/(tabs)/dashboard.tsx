@@ -49,8 +49,8 @@ export default function LopHocPhanDetail() {
   const { MaLHP } = useLocalSearchParams();
   const maLHP = parseInt(MaLHP as string);
   const [baiViet, setBaiViet] = useState<BaiViet[]>([]);
-  const { user } = useAuth();
-const [showMenuId, setShowMenuId] = useState<number | null>(null);
+  const { user } = useAuth(); // Lấy thông tin người dùng
+  const [showMenuId, setShowMenuId] = useState<number | null>(null);
 
   const fetchData = async () => {
     try {
@@ -131,7 +131,14 @@ const [showMenuId, setShowMenuId] = useState<number | null>(null);
       {/* Nút tạo thông báo mới */}
       <TouchableOpacity
         style={styles.newPostBtn}
-        onPress={() => router.push(`/tao/taobaiviet?maLHP=${id}`)}
+        onPress={() => {
+          if (user?.role === 1) {
+            // Kiểm tra nếu người dùng là giáo viên
+            router.push(`/tao/taobaiviet?maLHP=${id}`);
+          } else {
+            Alert.alert("Thông báo", "Chỉ giáo viên mới có thể tạo bài viết.");
+          }
+        }}
         activeOpacity={0.88}
       >
         <Ionicons name="pencil" size={18} color="white" />
@@ -141,80 +148,92 @@ const [showMenuId, setShowMenuId] = useState<number | null>(null);
       {/* Danh sách bài viết */}
       <Text style={styles.sectionTitle}>Thông báo lớp</Text>
       {baiViet
-      .filter((bv) => bv.LoaiBV === 0)
-      .map((bv) => (
-        <View key={bv.ID} style={styles.postCard}>
-          {/* Dấu ba chấm tuyệt đối góc phải trên */}
-          <TouchableOpacity
-            style={styles.ellipsisBtn}
-            onPress={() => setShowMenuId(showMenuId === bv.ID ? null : bv.ID)}
-            hitSlop={12}
-          >
-            <Ionicons name="ellipsis-vertical" size={20} color="#8e97be" />
-          </TouchableOpacity>
+        .filter((bv) => bv.LoaiBV === 0)
+        .map((bv) => (
+          <View key={bv.ID} style={styles.postCard}>
+            {/* Dấu ba chấm tuyệt đối góc phải trên */}
+            <TouchableOpacity
+              style={styles.ellipsisBtn}
+              onPress={() => setShowMenuId(showMenuId === bv.ID ? null : bv.ID)}
+              hitSlop={12}
+            >
+              <Ionicons name="ellipsis-vertical" size={20} color="#8e97be" />
+            </TouchableOpacity>
 
-          {/* Card clickable cho Xem chi tiết */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={{ flex: 1 }}
-            onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
-          >
-            <View style={styles.postHeader}>
-              <View style={styles.avatar}>
-                <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
-                  {bv.HoGV ? bv.HoGV.charAt(0).toUpperCase() : "U"}
-                </Text>
+            {/* Card clickable cho Xem chi tiết */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={{ flex: 1 }}
+              onPress={() => router.push(`../../../../(bv)/baiviet/${bv.ID}`)}
+            >
+              <View style={styles.postHeader}>
+                <View style={styles.avatar}>
+                  <Text
+                    style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}
+                  >
+                    {bv.HoGV ? bv.HoGV.charAt(0).toUpperCase() : "U"}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.postAuthor}>
+                    {bv.HoGV} {bv.TenGV}
+                  </Text>
+                  <Text style={styles.postDate}>
+                    {bv.NgayTao
+                      ? new Date(bv.NgayTao).toLocaleDateString("vi-VN")
+                      : "Không rõ"}
+                  </Text>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.postAuthor}>
-                  {bv.HoGV} {bv.TenGV}
-                </Text>
-                <Text style={styles.postDate}>
-                  {bv.NgayTao
-                    ? new Date(bv.NgayTao).toLocaleDateString("vi-VN")
-                    : "Không rõ"}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.postTitle}>{bv.TieuDe}</Text>
-            <Text style={styles.postContent}>{bv.NoiDung}</Text>
-          </TouchableOpacity>
+              <Text style={styles.postTitle}>{bv.TieuDe}</Text>
+              <Text style={styles.postContent}>{bv.NoiDung}</Text>
+            </TouchableOpacity>
 
-          {/* Menu popover khi bấm dấu ba chấm */}
-          {showMenuId === bv.ID && (
-  <>
-    {/* Lớp phủ toàn màn hình để bắt sự kiện bấm ngoài menu */}
-    <Pressable
-      style={StyleSheet.absoluteFill}
-      onPress={() => setShowMenuId(null)}
-    />
-    <View style={styles.menuPopover}>
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => {
-          setShowMenuId(null);
-          router.push(`../../../../(bv)/baiviet/edit/${bv.ID}`);
-        }}
-      >
-        <Ionicons name="create-outline" size={17} color="#4666ec" />
-        <Text style={styles.menuText}>Sửa bài viết</Text>
-      </TouchableOpacity>
-      <View style={styles.menuDivider} />
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => {
-          setShowMenuId(null);
-          handleDelete(bv.ID);
-        }}
-      >
-        <Ionicons name="trash-outline" size={17} color="#d92626" />
-        <Text style={[styles.menuText, { color: "#d92626" }]}>Xóa bài viết</Text>
-      </TouchableOpacity>
-    </View>
-  </>
-)}
-        </View>
-      ))}
+            {/* Menu popover khi bấm dấu ba chấm */}
+            {showMenuId === bv.ID &&
+              user?.role === 1 && ( // Kiểm tra role của người dùng
+                <>
+                  <Pressable
+                    style={StyleSheet.absoluteFill}
+                    onPress={() => setShowMenuId(null)}
+                  />
+                  <View style={styles.menuPopover}>
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => {
+                        setShowMenuId(null);
+                        router.push(`../../../../(bv)/baiviet/edit/${bv.ID}`);
+                      }}
+                    >
+                      <Ionicons
+                        name="create-outline"
+                        size={17}
+                        color="#4666ec"
+                      />
+                      <Text style={styles.menuText}>Sửa bài viết</Text>
+                    </TouchableOpacity>
+                    <View style={styles.menuDivider} />
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => {
+                        setShowMenuId(null);
+                        handleDelete(bv.ID);
+                      }}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={17}
+                        color="#d92626"
+                      />
+                      <Text style={[styles.menuText, { color: "#d92626" }]}>
+                        Xóa bài viết
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+          </View>
+        ))}
     </ScrollView>
   );
 }
@@ -313,45 +332,45 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   ellipsisBtn: {
-  position: "absolute",
-  top: 9,
-  right: 9,
-  padding: 4,
-  zIndex: 5,
-},
+    position: "absolute",
+    top: 9,
+    right: 9,
+    padding: 4,
+    zIndex: 5,
+  },
 
-menuPopover: {
-  position: "absolute",
-  top: 38,
-  right: 10,
-  backgroundColor: "#fff",
-  borderRadius: 10,
-  elevation: 10,
-  shadowColor: "#4666ec",
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.17,
-  shadowRadius: 7,
-  minWidth: 122,
-  paddingVertical: 7,
-  zIndex: 10,
-},
-menuItem: {
-  flexDirection: "row",
-  alignItems: "center",
-  paddingVertical: 9,
-  paddingHorizontal: 17,
-},
-menuText: {
-  fontSize: 14.5,
-  marginLeft: 7,
-  color: "#273262",
-  fontWeight: "600",
-},
-menuDivider: {
-  height: 1,
-  backgroundColor: "#f0f1f6",
-  marginHorizontal: 10,
-},
+  menuPopover: {
+    position: "absolute",
+    top: 38,
+    right: 10,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    elevation: 10,
+    shadowColor: "#4666ec",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.17,
+    shadowRadius: 7,
+    minWidth: 122,
+    paddingVertical: 7,
+    zIndex: 10,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 9,
+    paddingHorizontal: 17,
+  },
+  menuText: {
+    fontSize: 14.5,
+    marginLeft: 7,
+    color: "#273262",
+    fontWeight: "600",
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: "#f0f1f6",
+    marginHorizontal: 10,
+  },
 
   postHeader: {
     flexDirection: "row",

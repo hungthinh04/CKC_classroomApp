@@ -145,13 +145,46 @@ exports.getBaiVietTheoLoai = async (req, res) => {
 //   }
 // };
 
+exports.deleteBaiNop = async (req, res) => {
+  const { id } = req.params;  // Nhận ID của bài nộp từ URL params
+
+  // Kiểm tra ID hợp lệ
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ message: "ID bài nộp không hợp lệ" });
+  }
+
+  try {
+    // Thực hiện xóa bài nộp trong bảng SINHVIEN_NOPBAI
+    const result = await pool
+      .request()
+      .input("ID", sql.Int, parseInt(id))  // Chuyển ID thành số trước khi truyền vào SQL
+      .query("DELETE FROM SINHVIEN_NOPBAI WHERE ID = @ID");
+
+    // Kiểm tra xem có bài nộp nào được xóa hay không
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Không tìm thấy bài nộp để xóa" });
+    }
+
+    // Trả về phản hồi thành công
+    res.json({ message: "Xóa bài nộp thành công" });
+  } catch (err) {
+    console.error("❌ Lỗi khi xóa bài nộp:", err);
+    res.status(500).json({ message: "Lỗi server khi xóa bài nộp" });
+  }
+};
+
+
 exports.deleteBaiViet = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params;  // Nhận ID từ URL params
+  // console.log("ancjsk",id)
+  // if (!id || isNaN(id)) { // Kiểm tra nếu ID không hợp lệ
+  //   return res.status(400).json({ message: "ID không hợp lệ" });
+  // }
 
   try {
     await pool
       .request()
-      .input("ID", sql.Int, parseInt(id))
+      .input("ID", sql.Int, parseInt(id))  // Chuyển ID thành số trước khi truyền vào SQL
       .query("DELETE FROM BAIVIET WHERE ID = @ID");
 
     res.json({ message: "Xóa bài viết thành công" });
@@ -160,6 +193,7 @@ exports.deleteBaiViet = async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi xóa bài viết" });
   }
 };
+
 
 exports.nopBai = async (req, res) => {
   try {
@@ -322,5 +356,34 @@ exports.getBaiVietById = async (req, res) => {
   } catch (err) {
     console.error("❌ Lỗi khi lấy chi tiết bài viết:", err);
     res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+
+exports.getBaiTapCanLam = async (req, res) => {
+  const { maSV } = req.params; // Mã sinh viên (hoặc lấy từ token nếu đã login)
+  
+  try {
+    const result = await pool.request()
+      .input("MaSV", sql.Int, maSV)
+      .query(`
+        SELECT bv.ID, bv.TieuDe, bv.NoiDung, bv.NgayTao, bv.NgayKetThuc, bv.TrangThai
+        FROM BAIVIET bv
+        JOIN LOPHOCPHAN lhp ON bv.MaLHP = lhp.ID
+        JOIN SINHVIEN_LHP sv_lhp ON sv_lhp.MaLHP = lhp.ID
+        WHERE sv_lhp.MaSV = @MaSV 
+        AND bv.NgayKetThuc >= GETDATE()  -- Chỉ lấy bài chưa hết hạn
+        AND bv.TrangThai = 1  -- Chỉ lấy bài đang kích hoạt
+        AND NOT EXISTS (  -- Lọc các bài đã nộp
+          SELECT 1 
+          FROM SINHVIEN_NOPBAI sn 
+          WHERE sn.MaBaiViet = bv.ID AND sn.MaSV = @MaSV
+        )
+      `);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error("❌ Lỗi khi lấy bài tập cần làm:", err);
+    res.status(500).json({ message: "Lỗi khi lấy danh sách bài tập" });
   }
 };

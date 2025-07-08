@@ -129,3 +129,61 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ message: "Lỗi máy chủ" });
   }
 };
+exports.getProfile = async (req, res) => {
+  const userId = req.user.id; // Lấy thông tin người dùng từ JWT token (middleware bảo vệ)
+
+  try {
+    const result = await pool
+      .request()
+      .input("id", sql.Int, userId)
+      .query("SELECT * FROM USERS WHERE ID = @id");
+
+    const user = result.recordset[0];
+    // console.log(user," user");
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy thông tin người dùng" });
+    }
+
+    res.status(200).json({
+      id: user.ID,
+      email: user.Email,
+      role: user.Quyen,
+      hoTen: user.HoTen,
+      trangThai: user.TrangThai,
+      sdt: user.SDT,
+      diaChi: user.DiaChi,
+      maGiangVien: user.MaGiangVien,
+    });
+    console.log(`Lấy thông tin người dùng: ${JSON.stringify(user)}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi khi lấy thông tin tài khoản" });
+  }
+};
+
+// Cập nhật thông tin người dùng
+exports.updateProfile = async (req, res) => {
+  const userId = req.user.id; // Lấy thông tin người dùng từ JWT token (middleware bảo vệ)
+  const { email, hoTen, sdt, diaChi, matKhau } = req.body;
+
+  try {
+    const result = await pool
+      .request()
+      .input("id", sql.Int, userId)
+      .input("email", sql.VarChar, email)
+      .input("hoTen", sql.NVarChar, hoTen)
+      .input("sdt", sql.VarChar, sdt)
+      .input("diaChi", sql.NVarChar, diaChi)
+      .input("matKhau", sql.NVarChar, matKhau)
+      .query(`
+        UPDATE USERS
+        SET Email = @email, HoTen = @hoTen, SDT = @sdt, DiaChi = @diaChi, MatKhau = @matKhau
+        WHERE ID = @id
+      `);
+
+    res.status(200).json({ message: "Cập nhật thông tin thành công" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi khi cập nhật thông tin tài khoản" });
+  }
+};

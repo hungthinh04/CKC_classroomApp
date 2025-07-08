@@ -12,6 +12,7 @@ export default function CustomHeader() {
 
   const navigation = useNavigation();
   const { tenLHP } = useLopHocPhan();
+
   useEffect(() => {
     if (!id) return;
     fetch(`http://192.168.1.103:3001/lophophan/${id}`)
@@ -24,32 +25,32 @@ export default function CustomHeader() {
       case "(tabs)/dashboard":
         return (
           <>
-            <TouchableOpacity>
-              <Ionicons name="filter-outline" size={22} color="#ccc" />
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="filter-outline" size={22} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons name="camera-outline" size={22} color="#ccc" />
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="camera-outline" size={22} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
             </TouchableOpacity>
           </>
         );
       case "(tabs)/notifications":
         return (
           <>
-            <TouchableOpacity>
-              <Ionicons name="filter-outline" size={22} color="#ccc" />
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="filter-outline" size={22} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
             </TouchableOpacity>
           </>
         );
       case "(tabs)/peopleScreen":
         return (
-          <TouchableOpacity>
-            <Ionicons name="ellipsis-vertical" size={20} color="#ccc" />
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
           </TouchableOpacity>
         );
       default:
@@ -60,13 +61,8 @@ export default function CustomHeader() {
   return (
     <View style={styles.container}>
       {/* Menu trái */}
-      <TouchableOpacity>
-        <Ionicons
-          name="menu"
-          size={24}
-          color="#ccc"
-          onPress={() => navigation.openDrawer()}
-        />
+      <TouchableOpacity onPress={() => navigation.openDrawer()}>
+        <Ionicons name="menu" size={24} color="#fff" />
       </TouchableOpacity>
 
       {/* Tên lớp (ở giữa) */}
@@ -82,23 +78,30 @@ export default function CustomHeader() {
 
 const styles = StyleSheet.create({
   container: {
-    height: 50,
+    height: 60,
     paddingHorizontal: 16,
-    backgroundColor: "#1f1f1f",
+    backgroundColor: "#4f83ff",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0", 
   },
   title: {
     flex: 1,
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#4f83ff",
+    color: "#fff",
     marginHorizontal: 12,
   },
   iconGroup: {
     flexDirection: "row",
     gap: 16,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 50, 
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
 });

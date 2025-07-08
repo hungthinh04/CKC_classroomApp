@@ -4,10 +4,11 @@ import React, { useEffect, useState } from "react";
 import {
   Image,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Alert,
+  StyleSheet,
 } from "react-native";
 import { useAuth } from "../../../stores/useAuth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -93,6 +94,23 @@ export default function HomeScreen() {
     return "U";
   };
 
+  const handleMenuOption = (option: string) => {
+    if (option === "logout") {
+      Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Đồng ý",
+          onPress: handleLogout,
+        },
+      ]);
+    } else if (option === "profile") {
+      router.push(`/profile/${user?.id}`); // Đường dẫn tới trang thông tin tài khoản
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -115,7 +133,18 @@ export default function HomeScreen() {
           name="ellipsis-vertical"
           size={24}
           color="white"
-          onPress={handleLogout}
+          onPress={() =>
+            Alert.alert("Menu", "Chọn một hành động", [
+              {
+                text: "Xem thông tin tài khoản",
+                onPress: () => handleMenuOption("profile"),
+              },
+              {
+                text: "Đăng xuất",
+                onPress: () => handleMenuOption("logout"),
+              },
+            ])
+          }
         />
       </View>
 

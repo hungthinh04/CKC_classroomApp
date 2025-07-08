@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.json());
 
-app.use('/api', authRoutes);
+app.use('/api', require('./routes/auth'));
 app.use('/api', userRoutes);
 // app.use('/api', baivietRoutes);
 app.use('/api', require('./routes/giangvien'));
@@ -37,5 +37,6 @@ app.use('/lophocphan', require('./routes/lopHocPhan'));
 // app.use('/sinhvien', require('./routes/sinhvien'));
 app.use('/sinhvien_lhp', require('./routes/sinhvien_lhp'));
 app.use('/api/comments', require("./routes/nhanxet"));
+// app.use('/auth', require('./routes/auth'));
 
 module.exports = app;
