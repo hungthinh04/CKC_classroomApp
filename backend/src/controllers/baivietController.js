@@ -2,7 +2,6 @@ const { BASE_URL } = require("../../constants/Link");
 // import { BASE_URL } from '@/constants/Link';
 const { pool, sql } = require("../config/db");
 
-
 exports.getBaiVietByLHP = async (req, res) => {
   const maLHP = req.params.id;
   try {
@@ -12,7 +11,7 @@ exports.getBaiVietByLHP = async (req, res) => {
           bv.MaBaiViet, bv.TrangThai, gv.TenGV,gv.HoGV,bv.DuongDanFile
         FROM BAIVIET bv
         JOIN LOPHOCPHAN lhp ON bv.MaLHP = lhp.ID
-        JOIN GIANGVIENN gv ON lhp.MaGV = gv.ID
+        JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID
         WHERE bv.MaLHP = @MaLHP
       `);
     res.json(result.recordset);
@@ -146,7 +145,7 @@ exports.getBaiVietTheoLoai = async (req, res) => {
 // };
 
 exports.deleteBaiNop = async (req, res) => {
-  const { id } = req.params;  // Nhận ID của bài nộp từ URL params
+  const { id } = req.params; // Nhận ID của bài nộp từ URL params
 
   // Kiểm tra ID hợp lệ
   if (!id || isNaN(id)) {
@@ -157,7 +156,7 @@ exports.deleteBaiNop = async (req, res) => {
     // Thực hiện xóa bài nộp trong bảng SINHVIEN_NOPBAI
     const result = await pool
       .request()
-      .input("ID", sql.Int, parseInt(id))  // Chuyển ID thành số trước khi truyền vào SQL
+      .input("ID", sql.Int, parseInt(id)) // Chuyển ID thành số trước khi truyền vào SQL
       .query("DELETE FROM SINHVIEN_NOPBAI WHERE ID = @ID");
 
     // Kiểm tra xem có bài nộp nào được xóa hay không
@@ -173,9 +172,8 @@ exports.deleteBaiNop = async (req, res) => {
   }
 };
 
-
 exports.deleteBaiViet = async (req, res) => {
-  const { id } = req.params;  // Nhận ID từ URL params
+  const { id } = req.params; // Nhận ID từ URL params
   // console.log("ancjsk",id)
   // if (!id || isNaN(id)) { // Kiểm tra nếu ID không hợp lệ
   //   return res.status(400).json({ message: "ID không hợp lệ" });
@@ -184,7 +182,7 @@ exports.deleteBaiViet = async (req, res) => {
   try {
     await pool
       .request()
-      .input("ID", sql.Int, parseInt(id))  // Chuyển ID thành số trước khi truyền vào SQL
+      .input("ID", sql.Int, parseInt(id)) // Chuyển ID thành số trước khi truyền vào SQL
       .query("DELETE FROM BAIVIET WHERE ID = @ID");
 
     res.json({ message: "Xóa bài viết thành công" });
@@ -193,7 +191,6 @@ exports.deleteBaiViet = async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi xóa bài viết" });
   }
 };
-
 
 exports.nopBai = async (req, res) => {
   try {
@@ -291,8 +288,7 @@ exports.getBaiNopByBaiViet = async (req, res) => {
   const { maBaiViet } = req.params; // ID của bài viết (bài tập)
 
   try {
-    const result = await pool.request()
-      .input("MaBaiViet", sql.Int, maBaiViet) // Truyền ID bài viết vào câu truy vấn
+    const result = await pool.request().input("MaBaiViet", sql.Int, maBaiViet) // Truyền ID bài viết vào câu truy vấn
       .query(`
         SELECT 
           sn.ID,
@@ -309,8 +305,8 @@ exports.getBaiNopByBaiViet = async (req, res) => {
       `);
 
     if (result.recordset.length === 0) {
-  return res.json([]); // Trả về mảng rỗng thay vì 404
-}
+      return res.json([]); // Trả về mảng rỗng thay vì 404
+    }
 
     res.json(result.recordset); // Trả về danh sách bài nộp
   } catch (err) {
@@ -318,7 +314,6 @@ exports.getBaiNopByBaiViet = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi lấy bài nộp" });
   }
 };
-
 
 exports.getBaiVietById = async (req, res) => {
   const { id } = req.params;
@@ -339,7 +334,7 @@ exports.getBaiVietById = async (req, res) => {
     FROM BAIVIET bv
     JOIN USERS u ON bv.MaTK = u.ID
     LEFT JOIN SINHVIEN sv ON sv.MaTK = u.ID
-    LEFT JOIN GIANGVIENN gv ON gv.MaTK = u.ID
+    LEFT JOIN GIANGVIEN gv ON gv.MaTK = u.ID
     WHERE bv.ID = @ID
   `);
 
@@ -359,14 +354,11 @@ exports.getBaiVietById = async (req, res) => {
   }
 };
 
-
 exports.getBaiTapCanLam = async (req, res) => {
   const { maSV } = req.params; // Mã sinh viên (hoặc lấy từ token nếu đã login)
-  
+
   try {
-    const result = await pool.request()
-      .input("MaSV", sql.Int, maSV)
-      .query(`
+    const result = await pool.request().input("MaSV", sql.Int, maSV).query(`
         SELECT bv.ID, bv.TieuDe, bv.NoiDung, bv.NgayTao, bv.NgayKetThuc, bv.TrangThai
         FROM BAIVIET bv
         JOIN LOPHOCPHAN lhp ON bv.MaLHP = lhp.ID

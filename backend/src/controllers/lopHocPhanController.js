@@ -16,8 +16,7 @@ exports.getLopHocPhanById = async (req, res) => {
 exports.getBaiTapByLopHocPhan = async (req, res) => {
   const { maLHP } = req.query;
   try {
-    const result = await pool.request()
-      .input('MaLHP', sql.Int, parseInt(maLHP))
+    const result = await pool.request().input("MaLHP", sql.Int, parseInt(maLHP))
       .query(`
         SELECT ID, TieuDe, NgayTao, NgayKetThuc, GioKetThuc
         FROM BAIVIET
@@ -27,10 +26,9 @@ exports.getBaiTapByLopHocPhan = async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error("Lỗi lấy danh sách bài tập:", err);
-    res.status(500).json({ message: 'Lỗi server khi lấy bài tập' });
+    res.status(500).json({ message: "Lỗi server khi lấy bài tập" });
   }
 };
-
 
 exports.getGiangVienVaSinhVien = async (req, res) => {
   const maLHP = req.query.maLHP;
@@ -41,7 +39,7 @@ exports.getGiangVienVaSinhVien = async (req, res) => {
     gv.ID AS maGV, gv.HoGV + ' ' + gv.TenGV AS tenGV,
     sv.ID AS maSV, sv.HoTen AS tenSV
   FROM LOPHOCPHAN lhp
-  JOIN GIANGVIENN gv ON lhp.MaGV = gv.ID
+  JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID
   JOIN SINHVIEN_LHP slhp ON lhp.ID = slhp.MaLHP
   JOIN SINHVIEN sv ON sv.ID = slhp.MaSV
   WHERE lhp.ID = @MaLHP
@@ -78,7 +76,8 @@ exports.addSinhVien = async (req, res) => {
 
   try {
     // 1. Tìm ID tài khoản người dùng từ email
-    const userRes = await pool.request()
+    const userRes = await pool
+      .request()
       .input("Email", sql.VarChar, email)
       .query("SELECT ID FROM USERS WHERE Email = @Email AND Quyen = 0");
 
@@ -89,28 +88,37 @@ exports.addSinhVien = async (req, res) => {
     const maTK = userRes.recordset[0].ID;
 
     // 2. Tìm ID sinh viên tương ứng với tài khoản đó
-    const svRes = await pool.request()
+    const svRes = await pool
+      .request()
       .input("MaTK", sql.Int, maTK)
       .query("SELECT ID FROM SINHVIEN WHERE MaTK = @MaTK");
 
     if (svRes.recordset.length === 0) {
-      return res.status(404).json({ message: "Tài khoản này chưa được đăng ký làm sinh viên" });
+      return res
+        .status(404)
+        .json({ message: "Tài khoản này chưa được đăng ký làm sinh viên" });
     }
 
     const maSV = svRes.recordset[0].ID;
 
     // 3. Kiểm tra sinh viên đã có trong lớp chưa
-    const checkExist = await pool.request()
+    const checkExist = await pool
+      .request()
       .input("MaSV", sql.Int, maSV)
       .input("MaLHP", sql.Int, maLHP)
-      .query("SELECT * FROM SINHVIEN_LHP WHERE MaSV = @MaSV AND MaLHP = @MaLHP");
+      .query(
+        "SELECT * FROM SINHVIEN_LHP WHERE MaSV = @MaSV AND MaLHP = @MaLHP"
+      );
 
     if (checkExist.recordset.length > 0) {
-      return res.status(409).json({ message: "Sinh viên đã nằm trong lớp học phần này" });
+      return res
+        .status(409)
+        .json({ message: "Sinh viên đã nằm trong lớp học phần này" });
     }
 
     // 4. Thêm vào lớp học phần
-    await pool.request()
+    await pool
+      .request()
       .input("MaSV", sql.Int, maSV)
       .input("MaLHP", sql.Int, maLHP)
       .input("TrangThai", sql.SmallInt, 1) // hoặc 0 nếu mặc định
@@ -126,7 +134,6 @@ exports.addSinhVien = async (req, res) => {
   }
 };
 
-
 exports.addGiangVien = async (req, res) => {
   const { maLHP } = req.params;
   const { email } = req.body;
@@ -135,7 +142,8 @@ exports.addGiangVien = async (req, res) => {
 
   try {
     // Tìm user có role giảng viên
-    const userRes = await pool.request()
+    const userRes = await pool
+      .request()
       .input("Email", sql.VarChar, email)
       .query("SELECT ID FROM USERS WHERE Email = @Email AND Quyen = 1");
 
@@ -146,10 +154,10 @@ exports.addGiangVien = async (req, res) => {
     const maTK = userRes.recordset[0].ID;
 
     // Cập nhật lại lớp học phần
-    await pool.request()
+    await pool
+      .request()
       .input("MaTK", sql.Int, maTK)
-      .input("MaLHP", sql.Int, maLHP)
-      .query(`
+      .input("MaLHP", sql.Int, maLHP).query(`
         UPDATE LOPHOCPHAN SET MaGV = @MaTK WHERE ID = @MaLHP
       `);
 
@@ -167,7 +175,8 @@ exports.removeSinhVien = async (req, res) => {
   if (!maSV) return res.status(400).json({ message: "Thiếu mã sinh viên" });
 
   try {
-    await pool.request()
+    await pool
+      .request()
       .input("MaLHP", sql.Int, maLHP)
       .input("MaSV", sql.Int, maSV)
       .query("DELETE FROM SINHVIEN_LHP WHERE MaLHP = @MaLHP AND MaSV = @MaSV");

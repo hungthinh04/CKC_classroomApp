@@ -16,7 +16,7 @@ exports.getLopHocPhanBySinhVien = async (req, res) => {
           lh.MaLop
         FROM SINHVIEN_LHP svlhp
         JOIN LOPHOCPHAN lhp ON svlhp.MaLHP = lhp.ID
-        JOIN GIANGVIENN gv ON lhp.MaGV = gv.ID
+        JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID
         JOIN MONHOC mh ON lhp.MaMH = mh.ID
         JOIN LOPHOC lh ON lhp.MaLH = lh.ID
         WHERE svlhp.MaSV = @MaSV AND lhp.TrangThai = 1
@@ -28,5 +28,3 @@ exports.getLopHocPhanBySinhVien = async (req, res) => {
     res.status(500).json({ message: "Không thể lấy lớp học phần sinh viên" });
   }
 };
-
-

@@ -149,10 +149,11 @@ exports.getGiangVienById = async (req, res) => {
     const result = await pool
       .request()
       .input("ID", sql.Int, id)
-      .query("SELECT * FROM GIANGVIENN WHERE ID = @ID");
+      .query("SELECT * FROM GIANGVIEN WHERE ID = @ID");
 
     const gv = result.recordset[0];
-    if (!gv) return res.status(404).json({ message: "Không tìm thấy giảng viên" });
+    if (!gv)
+      return res.status(404).json({ message: "Không tìm thấy giảng viên" });
 
     res.json({
       id: gv.ID,
@@ -196,27 +197,24 @@ exports.getSinhVienById = async (req, res) => {
 
 exports.getAllKhoa = async (req, res) => {
   try {
-   const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
-const [start, end] = range;
+    const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
+    const [start, end] = range;
 
-const result = await pool.request().query("SELECT * FROM KHOA");
+    const result = await pool.request().query("SELECT * FROM KHOA");
 
-const sliced = result.recordset.slice(start, end + 1);
-const total = result.recordset.length;
+    const sliced = result.recordset.slice(start, end + 1);
+    const total = result.recordset.length;
 
-res.set("Content-Range", `khoa ${start}-${end}/${total}`);
-res.set("Access-Control-Expose-Headers", "Content-Range");
+    res.set("Content-Range", `khoa ${start}-${end}/${total}`);
+    res.set("Access-Control-Expose-Headers", "Content-Range");
 
-const data = sliced.map((item, index) => ({
-  ...item,
-  id: item.ID,
-  stt: start + index + 1,
-}));
+    const data = sliced.map((item, index) => ({
+      ...item,
+      id: item.ID,
+      stt: start + index + 1,
+    }));
 
-res.json(data);
-
-    
-
+    res.json(data);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi truy vấn khoa" });
@@ -252,12 +250,11 @@ exports.getAllLopHoc = async (req, res) => {
     res.set("Access-Control-Expose-Headers", "Content-Range");
 
     const data = result.recordset.map((item) => ({
-  id: item.ID,
-  maLop: item.MaLop,
-  tenLP: item.TenLP,
-  maBM: item.MaBM,
-}));
-
+      id: item.ID,
+      maLop: item.MaLop,
+      tenLP: item.TenLP,
+      maBM: item.MaBM,
+    }));
 
     res.json(data);
   } catch (err) {
@@ -278,7 +275,7 @@ exports.getAllUsers = async (req, res) => {
         COALESCE(sv.HoTen, gv.HoGV + ' ' + gv.TenGV, u.HoTen) AS HoTen
       FROM USERS u
       LEFT JOIN SINHVIEN sv ON u.ID = sv.MaTK
-      LEFT JOIN GIANGVIENN gv ON u.ID = gv.MaTK
+      LEFT JOIN GIANGVIEN gv ON u.ID = gv.MaTK
     `);
 
     const total = result.recordset.length;
@@ -287,15 +284,14 @@ exports.getAllUsers = async (req, res) => {
     res.set("Access-Control-Expose-Headers", "Content-Range");
 
     const data = result.recordset.map((item) => ({
-  id: item.ID,
-  maNguoiDung: item.MaNguoiDung,
-  email: item.Email,
-  matKhau: item.MatKhau,
-  hoTen: item.HoTen,
-  quyen: item.Quyen,
-  trangThai: item.TrangThai,
-}));
-
+      id: item.ID,
+      maNguoiDung: item.MaNguoiDung,
+      email: item.Email,
+      matKhau: item.MatKhau,
+      hoTen: item.HoTen,
+      quyen: item.Quyen,
+      trangThai: item.TrangThai,
+    }));
 
     res.json(data);
   } catch (err) {
@@ -351,36 +347,45 @@ exports.getAllBoMon = async (req, res) => {
     const [sortField, sortOrder] = sortParam;
 
     const sortFieldSafe = allowedSortFields.includes(sortField) ? sortField : "ID";
+    const sortOrderSafe = sortOrder && sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
 
     const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
     const [start, end] = range;
+    const limit = end - start + 1;
 
     const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
     const tenBM = filter.TenBM || "";
 
-    // JOIN BOMON với KHOA để lấy tên khoa
     const result = await pool
       .request()
       .input("TenBM", sql.NVarChar, `%${tenBM}%`)
+      .input("start", sql.Int, start)
+      .input("limit", sql.Int, limit)
       .query(`
         SELECT 
           BM.ID, 
           BM.TenBM, 
           BM.MaKhoa, 
-          K.TenKhoa  -- Thêm tên khoa
+          K.TenKhoa  
         FROM BOMON BM
         JOIN KHOA K ON BM.MaKhoa = K.ID
         WHERE BM.TenBM LIKE @TenBM
-        ORDER BY ${sortFieldSafe} ${sortOrder.toUpperCase()}
+        ORDER BY ${sortFieldSafe} ${sortOrderSafe}
+        OFFSET @start ROWS FETCH NEXT @limit ROWS ONLY
       `);
 
-    const sliced = result.recordset.slice(start, end + 1);
-    const total = result.recordset.length;
+    // Lấy tổng số lượng
+    const countResult = await pool
+      .request()
+      .input("TenBM", sql.NVarChar, `%${tenBM}%`)
+      .query(`SELECT COUNT(*) as total FROM BOMON WHERE TenBM LIKE @TenBM`);
 
-    res.set("Content-Range", `bomon ${start}-${end}/${total}`);
+    const total = countResult.recordset[0].total;
+
+    res.set("Content-Range", `bomon ${start}-${start + result.recordset.length - 1}/${total}`);
     res.set("Access-Control-Expose-Headers", "Content-Range");
 
-    const data = sliced.map((item, index) => ({
+    const data = result.recordset.map((item, index) => ({
       ...item,
       id: item.ID,
       stt: start + index + 1,
@@ -478,12 +483,13 @@ exports.deleteBoMon = async (id) => {
       .input("ID", sql.Int, id)
       .query("DELETE FROM BOMON WHERE ID = @ID");
 
-    console.log("Bộ môn đã được xóa và các bản ghi liên quan trong NHANXET đã được xóa.");
+    console.log(
+      "Bộ môn đã được xóa và các bản ghi liên quan trong NHANXET đã được xóa."
+    );
   } catch (err) {
     console.error("Lỗi khi xóa bộ môn:", err);
   }
 };
-
 
 exports.addMonHoc = async (req, res) => {
   const { tenMH, tinChi, maBM } = req.body;
@@ -570,7 +576,8 @@ exports.updateMonHoc = async (req, res) => {
 };
 
 exports.deleteMonHoc = async (req, res) => {
-  const { id } = req.params;
+  // const { id } = req.params;
+  const id = parseInt(req.params.id);
 
   try {
     await pool
@@ -638,7 +645,7 @@ exports.getLopHocPhanById = async (req, res) => {
 
 exports.getAllGiangVien = async (req, res) => {
   try {
-    const result = await pool.request().query("SELECT * FROM GIANGVIENN");
+    const result = await pool.request().query("SELECT * FROM GIANGVIEN");
     const total = result.recordset.length;
 
     res.set("Content-Range", `giangvien 0-${total - 1}/${total}`);
@@ -759,7 +766,6 @@ exports.getAllGiangVien = async (req, res) => {
 //   }
 // };
 
-
 const removeDiacritics = (str) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
@@ -777,12 +783,12 @@ exports.addGiangVien = async (req, res) => {
     trangThai,
   } = req.body;
 
-  const email = `${removeDiacritics(hoGV.toLowerCase().replace(" ", ""))}${removeDiacritics(tenGV.toLowerCase().replace(" ", ""))}@ckc.vn`;
-
   try {
+ 
+    // Insert user vào bảng USERS
     const userResult = await pool
       .request()
-      .input("Email", sql.NVarChar(100), email)
+      .input("Email", sql.NVarChar(100), "")
       .input("MatKhau", sql.NVarChar(255), "defaultPassword")
       .input("Quyen", sql.Int, 1) // Giảng viên
       .input("TrangThai", sql.SmallInt, 1) // Hoạt động
@@ -794,8 +800,18 @@ exports.addGiangVien = async (req, res) => {
 
     const maTK = userResult.recordset[0].MaTK;
 
-    const maGiangVien = `GV${maTK.toString().padStart(3, '0')}`;
+    const email = `gv${maTK}@ckc.vn`;
 
+    // Cập nhật lại email
+    await pool
+      .request()
+      .input("Email", sql.NVarChar(100), email)
+      .input("ID", sql.Int, maTK)
+      .query("UPDATE USERS SET Email = @Email WHERE ID = @ID");
+
+    const maGiangVien = `GV${maTK.toString().padStart(3, "0")}`;
+
+    // Insert giảng viên vào bảng GIANGVIEN
     const giangVienResult = await pool
       .request()
       .input("MSGV", sql.VarChar(10), `gv${maTK}`)
@@ -811,20 +827,19 @@ exports.addGiangVien = async (req, res) => {
       .input("TrangThai", sql.SmallInt, trangThai)
       .input("MaGiangVien", sql.NVarChar(20), maGiangVien)
       .query(`
-        INSERT INTO GIANGVIENN (MSGV, HoGV, TenGV, NgaySinh, GioiTinh, SDT, MaTK, CCCD, MaBM, DiaChi, TrangThai, MaGiangVien)
+        INSERT INTO GIANGVIEN (MSGV, HoGV, TenGV, NgaySinh, GioiTinh, SDT, MaTK, CCCD, MaBM, DiaChi, TrangThai, MaGiangVien)
         VALUES (@MSGV, @HoGV, @TenGV, @NgaySinh, @GioiTinh, @SDT, @MaTK, @CCCD, @MaBM, @DiaChi, @TrangThai, @MaGiangVien);
-        SELECT TOP 1 * FROM GIANGVIENN ORDER BY ID DESC;
+        SELECT TOP 1 * FROM GIANGVIEN ORDER BY ID DESC;
       `);
 
     const gv = giangVienResult.recordset[0];
-    res.status(201).json({ id: gv.ID, ...gv });
+
+    res.status(201).json({ id: gv.ID, ...gv, email });
   } catch (err) {
     console.error("Lỗi thêm giảng viên:", err);
     res.status(500).json({ message: "Không thể thêm giảng viên" });
   }
 };
-
-
 
 exports.updateGiangVien = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -858,9 +873,8 @@ exports.updateGiangVien = async (req, res) => {
       .input("MaBM", sql.Int, maBM)
       .input("DiaChi", sql.Text, diaChi)
       .input("TrangThai", sql.SmallInt, trangThai)
-      .input("MaGiangVien", sql.NVarChar(20), maGiangVien)
-      .query(`
-        UPDATE GIANGVIENN SET
+      .input("MaGiangVien", sql.NVarChar(20), maGiangVien).query(`
+        UPDATE GIANGVIEN SET
           MSGV = @MSGV,
           HoGV = @HoGV,
           TenGV = @TenGV,
@@ -903,11 +917,11 @@ exports.deleteGiangVien = async (req, res) => {
     await pool
       .request()
       .input("ID", sql.Int, id)
-      .query("DELETE FROM GIANGVIENN WHERE ID = @ID");
+      .query("DELETE FROM GIANGVIEN WHERE ID = @ID");
     await pool.request().query(`
       DECLARE @MaxID INT;
-      SELECT @MaxID = ISNULL(MAX(ID), 0) FROM GIANGVIENN;
-      DBCC CHECKIDENT ('GIANGVIENN', RESEED, @MaxID);
+      SELECT @MaxID = ISNULL(MAX(ID), 0) FROM GIANGVIEN;
+      DBCC CHECKIDENT ('GIANGVIEN', RESEED, @MaxID);
     `);
     res
       .status(200)
@@ -961,13 +975,13 @@ exports.addSinhVien = async (req, res) => {
 
     const inserted = result.recordset[0];
     res.status(201).json({ id: inserted.ID, ...inserted });
-  //   const query1 = `INSERT INTO SINHVIEN_LHP (MaSV, MaLHP) SELECT MaSinhVien, MaLopHoc FROM SINHVIEN WHERE ID = ${inserted.ID}`;
-  //   await pool.request().input("ID", sql.Int, inserted.ID).query(`
-  //   INSERT INTO SINHVIEN_LHP (MaSV, MaLHP)
-  //   SELECT MaTK, MaLopHoc FROM SINHVIEN WHERE ID = ${inserted.ID}
-  // `);
+    //   const query1 = `INSERT INTO SINHVIEN_LHP (MaSV, MaLHP) SELECT MaSinhVien, MaLopHoc FROM SINHVIEN WHERE ID = ${inserted.ID}`;
+    //   await pool.request().input("ID", sql.Int, inserted.ID).query(`
+    //   INSERT INTO SINHVIEN_LHP (MaSV, MaLHP)
+    //   SELECT MaTK, MaLopHoc FROM SINHVIEN WHERE ID = ${inserted.ID}
+    // `);
 
-  //   await pool.request().query(query1);
+    //   await pool.request().query(query1);
   } catch (err) {
     console.error("❌ Lỗi thêm sinh viên:", err);
     res.status(500).json({ message: "Không thể thêm sinh viên" });
@@ -1020,14 +1034,9 @@ exports.deleteKhoa = async (req, res) => {
 exports.updateSinhVien = async (req, res) => {
   const id = parseInt(req.params.id); // ID từ URL
 
-  const {
-    MaSinhVien,
-    MaTK,
-    MaLopHoc,
-    HoTen
-  } = req.body;
+  const { MaSinhVien, MaTK, MaLopHoc, HoTen } = req.body;
 
-console.log(req.body);
+  console.log(req.body);
   if (!MaTK || !MaLopHoc || !HoTen) {
     return res.status(400).json({ message: "Thiếu thông tin cần thiết." });
   }
@@ -1039,8 +1048,7 @@ console.log(req.body);
       .input("MaSinhVien", sql.VarChar(20), MaSinhVien)
       .input("MaTK", sql.Int, MaTK)
       .input("MaLopHoc", sql.Int, MaLopHoc)
-      .input("HoTen", sql.NVarChar(255), HoTen)
-      .query(`
+      .input("HoTen", sql.NVarChar(255), HoTen).query(`
         UPDATE SINHVIEN
         SET MaSinhVien = @MaSinhVien,
             MaTK = @MaTK,
@@ -1055,7 +1063,6 @@ console.log(req.body);
     res.status(500).json({ message: "Không thể cập nhật sinh viên" });
   }
 };
-
 
 exports.deleteSinhVien = async (req, res) => {
   const id = req.params.id;
@@ -1080,15 +1087,14 @@ exports.deleteSinhVien = async (req, res) => {
   }
 };
 exports.addLopHoc = async (req, res) => {
-  const { tenLP, maBM } = req.body;  // Không cần gửi MaLop nữa
+  const { tenLP, maBM } = req.body; // Không cần gửi MaLop nữa
 
   try {
     // Câu lệnh INSERT không cần MaLop nữa vì MaLop tự tăng
     await pool
       .request()
       .input("TenLP", sql.NVarChar(255), tenLP)
-      .input("MaBM", sql.Int, maBM)
-      .query(`
+      .input("MaBM", sql.Int, maBM).query(`
         INSERT INTO LOPHOC (TenLP, MaBM)
         VALUES (@TenLP, @MaBM);
     `);
@@ -1168,14 +1174,7 @@ exports.addLopHoc = async (req, res) => {
 // };
 exports.updateUsers = async (req, res) => {
   const id = parseInt(req.params.id);
-  const {
-    maNguoiDung,
-    email,
-    matKhau,
-    hoTen,
-    quyen,
-    trangThai,
-  } = req.body; // 👈 camelCase đúng như frontend gửi
+  const { maNguoiDung, email, matKhau, hoTen, quyen, trangThai } = req.body; // 👈 camelCase đúng như frontend gửi
 
   if (!maNguoiDung || !email || !matKhau) {
     console.log("📥 Thiếu thông tin:", req.body);
@@ -1193,8 +1192,7 @@ exports.updateUsers = async (req, res) => {
       .input("MatKhau", sql.NVarChar(255), matKhau)
       .input("HoTen", sql.NVarChar(255), hoTen)
       .input("Quyen", sql.Int, quyen)
-      .input("TrangThai", sql.SmallInt, trangThai)
-      .query(`
+      .input("TrangThai", sql.SmallInt, trangThai).query(`
         UPDATE USERS
         SET MaNguoiDung = @MaNguoiDung,
             Email = @Email,
@@ -1219,8 +1217,6 @@ exports.updateUsers = async (req, res) => {
     res.status(500).json({ message: "Không thể cập nhật user" });
   }
 };
-
-
 
 exports.deleteUsers = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -1260,8 +1256,7 @@ exports.updateLopHoc = async (req, res) => {
       .input("ID", sql.Int, id)
       .input("MaLop", sql.VarChar(20), maLop)
       .input("TenLP", sql.NVarChar(255), tenLP)
-      .input("MaBM", sql.Int, maBM)
-      .query(`
+      .input("MaBM", sql.Int, maBM).query(`
         UPDATE LOPHOC
         SET MaLop = @MaLop,
             TenLP = @TenLP,
@@ -1275,7 +1270,6 @@ exports.updateLopHoc = async (req, res) => {
     res.status(500).json({ message: "Không thể cập nhật lớp học" });
   }
 };
-
 
 exports.deleteLopHoc = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -1302,15 +1296,17 @@ exports.addLopHoc = async (req, res) => {
   const { tenLP, maBM } = req.body;
 
   if (!tenLP || !maBM) {
-    return res.status(400).json({ message: "Tên lớp và Mã bộ môn không được để trống." });
+    return res
+      .status(400)
+      .json({ message: "Tên lớp và Mã bộ môn không được để trống." });
   }
 
   try {
     // Bước 1: Thêm lớp học vào bảng mà không cần MaLop (MaLop tự động sinh ra sau)
     await pool
       .request()
-      .input("TenLP", sql.NVarChar(255), tenLP)  // Truyền tên lớp
-      .input("MaBM", sql.Int, maBM)              // Truyền mã bộ môn
+      .input("TenLP", sql.NVarChar(255), tenLP) // Truyền tên lớp
+      .input("MaBM", sql.Int, maBM) // Truyền mã bộ môn
       .query(`
         INSERT INTO LOPHOC (TenLP, MaBM)
         VALUES (@TenLP, @MaBM);
@@ -1322,13 +1318,13 @@ exports.addLopHoc = async (req, res) => {
       .query("SELECT TOP 1 * FROM LOPHOC ORDER BY ID DESC");
 
     const inserted = result.recordset[0];
-    const maLop = `L${String(inserted.ID).padStart(3, '0')}`; // Tạo mã lớp L001, L002, ...
+    const maLop = `L${String(inserted.ID).padStart(3, "0")}`; // Tạo mã lớp L001, L002, ...
 
     // Bước 3: Cập nhật mã lớp vào bảng `LOPHOC`
     await pool
       .request()
-      .input("MaLop", sql.VarChar(20), maLop)   // Mã lớp mới
-      .input("ID", sql.Int, inserted.ID)        // ID lớp học vừa chèn
+      .input("MaLop", sql.VarChar(20), maLop) // Mã lớp mới
+      .input("ID", sql.Int, inserted.ID) // ID lớp học vừa chèn
       .query(`
         UPDATE LOPHOC
         SET MaLop = @MaLop
@@ -1342,8 +1338,6 @@ exports.addLopHoc = async (req, res) => {
     res.status(500).json({ message: "Không thể thêm lớp học" });
   }
 };
-
-
 
 exports.addLopHocPhan = async (req, res) => {
   const {
@@ -1359,11 +1353,11 @@ exports.addLopHocPhan = async (req, res) => {
     trangThai,
   } = req.body;
 
-  // Kiểm tra xem mã giảng viên (MaGV) có tồn tại trong bảng GIANGVIENN không
+  // Kiểm tra xem mã giảng viên (MaGV) có tồn tại trong bảng GIANGVIEN không
   const checkGiangVien = await pool
     .request()
     .input("MaGV", sql.Int, maGV)
-    .query("SELECT * FROM GIANGVIENN WHERE ID = @MaGV");
+    .query("SELECT * FROM GIANGVIEN WHERE ID = @MaGV");
 
   if (!checkGiangVien.recordset.length) {
     return res.status(400).json({ message: "Mã giảng viên không hợp lệ" });
@@ -1378,12 +1372,11 @@ exports.addLopHocPhan = async (req, res) => {
       .input("HocKy", sql.SmallInt, hocKy)
       .input("ChinhSach", sql.SmallInt, chinhSach)
       .input("NamHoc", sql.Int, namHoc)
-      .input("MaGV", sql.Int, maGV)  // Giảng viên có mã MaGV từ client
-      .input("MaLH", sql.Int, maLH)  // Lớp học có mã MaLH từ client
-      .input("MaMH", sql.Int, maMH)  // Môn học có mã MaMH từ client
+      .input("MaGV", sql.Int, maGV) // Giảng viên có mã MaGV từ client
+      .input("MaLH", sql.Int, maLH) // Lớp học có mã MaLH từ client
+      .input("MaMH", sql.Int, maMH) // Môn học có mã MaMH từ client
       .input("LuuTru", sql.SmallInt, luuTru)
-      .input("TrangThai", sql.SmallInt, trangThai)
-      .query(`
+      .input("TrangThai", sql.SmallInt, trangThai).query(`
         INSERT INTO LOPHOCPHAN (TenLHP, NgayTao, HocKy, ChinhSach, NamHoc, MaGV, MaLH, MaMH, LuuTru, TrangThai)
         VALUES (@TenLHP, @NgayTao, @HocKy, @ChinhSach, @NamHoc, @MaGV, @MaLH, @MaMH, @LuuTru, @TrangThai);
       `);
@@ -1409,8 +1402,6 @@ exports.addLopHocPhan = async (req, res) => {
     res.status(500).json({ message: "Không thể thêm lớp học phần" });
   }
 };
-
-
 
 exports.updateLopHoc = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -1527,5 +1518,236 @@ exports.deleteLopHocPhan = async (req, res) => {
   } catch (err) {
     console.error("Lỗi khi xóa lớp học phần:", err);
     res.status(500).json({ message: "Không thể xóa lớp học phần" });
+  }
+};
+
+exports.getAllSinhVienLHP = async (req, res) => {
+  try {
+    const result = await pool.request().query("SELECT *, ID as id FROM SINHVIEN_LHP");
+      const total = result.recordset.length;
+
+    res.set("Content-Range", `khoa 0-${total - 1}/${total}`);
+    res.set("Access-Control-Expose-Headers", "Content-Range");
+       const data = result.recordset.map((item) => ({
+      ...item,
+      id: item.ID, // 👈 React Admin bắt buộc
+    }));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi truy vấn tài liệu" });
+  }
+}
+
+
+exports.getSinhVienLHPById = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    const result = await pool.request().input("ID", sql.Int, id)
+      .query("SELECT *, ID as id FROM SINHVIEN_LHP WHERE ID = @ID");
+    if (!result.recordset[0])
+      return res.status(404).json({ message: "Không tìm thấy bản ghi" });
+    res.json(result.recordset[0]);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi truy vấn" });
+  }
+};
+exports.updateSinhVienLHP = async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { maGV, maLHP, trangThai } = req.body;
+  try {
+    await pool.request()
+      .input("ID", sql.Int, id)
+      .input("MaSV", sql.Int, maGV)
+      .input("MaLHP", sql.Int, maLHP)
+      .input("TrangThai", sql.SmallInt, trangThai)
+      .query(`
+        UPDATE SINHVIEN_LHP
+        SET MaSV = @MaSV, MaLHP = @MaLHP, TrangThai = @TrangThai
+        WHERE ID = @ID
+      `);
+    res.status(200).json({ id, maGV, maLHP, trangThai });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi cập nhật phân công" });
+  }
+};
+exports.deleteSinhVienLHP = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    await pool.request().input("ID", sql.Int, id)
+      .query("DELETE FROM SINHVIEN_LHP WHERE ID = @ID");
+    res.status(200).json({ id, message: "Đã xóa" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi xóa phân công" });
+  }
+};
+exports.addSinhVienLHP = async (req, res) => {
+  const { maSV, maLHP, trangThai } = req.body;
+
+  if (!maSV || !maLHP) {
+    return res.status(400).json({ message: "Thiếu thông tin cần thiết: Mã sinh viên và Mã lớp học phần." });
+  }
+
+  try {
+    const result = await pool
+      .request()
+      .input("MaSV", sql.Int, maSV)
+      .input("MaLHP", sql.Int, maLHP)
+      .input("TrangThai", sql.SmallInt, trangThai || 1)  // Default trangThai = 1
+      .query(`
+        INSERT INTO SINHVIEN_LHP (MaSV, MaLHP, TrangThai)
+        VALUES (@MaSV, @MaLHP, @TrangThai);
+        SELECT TOP 1 * FROM SINHVIEN_LHP ORDER BY ID DESC;
+      `);
+
+    if (result && result.recordset && result.recordset[0]) {
+      const inserted = result.recordset[0];  // Get the inserted record
+
+      // Ensure that the response is wrapped in the 'data' key
+      res.status(201).json({
+          // Wrap the result in the 'data' key
+          id: inserted.ID,  // Ensure 'id' is included
+          MaSV: inserted.MaSV,
+          MaLHP: inserted.MaLHP,
+          TrangThai: inserted.TrangThai,
+        
+      });
+    } else {
+      console.error("Lỗi: Không có dữ liệu trả về từ cơ sở dữ liệu.");
+      res.status(400).json({ message: "Không có dữ liệu trả về từ cơ sở dữ liệu." });
+    }
+  } catch (err) {
+    console.error("Lỗi thêm phân công giảng viên:", err);
+    res.status(500).json({ message: "Lỗi thêm phân công giảng viên" });
+  }
+};
+exports.getAllGiangVienLHP = async (req, res) => {
+  try {
+    const result = await pool.request().query("SELECT *, ID as id FROM GIANGVIEN_LHP");
+      const total = result.recordset.length;
+
+    res.set("Content-Range", `khoa 0-${total - 1}/${total}`);
+    res.set("Access-Control-Expose-Headers", "Content-Range");
+       const data = result.recordset.map((item) => ({
+      ...item,
+      id: item.ID, // 👈 React Admin bắt buộc
+    }));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi truy vấn tài liệu" });
+  }
+};
+
+exports.getGiangVienLHPById = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    const result = await pool.request().input("ID", sql.Int, id)
+      .query("SELECT *, ID as id FROM GIANGVIEN_LHP WHERE ID = @ID");
+    if (!result.recordset[0])
+      return res.status(404).json({ message: "Không tìm thấy bản ghi" });
+    res.json(result.recordset[0]);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi truy vấn" });
+  }
+};
+exports.getBaiVietById = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    const result = await pool.request()
+      .input("ID", sql.Int, id)
+      .query("SELECT * FROM BAIVIET WHERE ID = @ID");
+
+    const baiViet = result.recordset[0];
+
+    if (!baiViet) {
+      return res.status(404).json({ message: "Không tìm thấy bài viết" });
+    }
+
+    // Đảm bảo dữ liệu có trường `id` và đóng gói trong `data`
+    res.json({
+      data: {
+        id: baiViet.ID,  // Đảm bảo có trường `id`
+        ...baiViet      // Các trường còn lại
+      }
+    });
+  } catch (err) {
+    console.error("Lỗi khi truy vấn bài viết:", err);
+    res.status(500).json({ message: "Lỗi truy vấn bài viết" });
+  }
+};
+exports.updateGiangVienLHP = async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { maGV, maLHP, trangThai } = req.body;
+
+  if (!maGV || maGV === null) {
+    return res.status(400).json({ message: "MaGV không được để trống" });
+  }
+
+  try {
+    await pool
+      .request()
+      .input("ID", sql.Int, id)
+      .input("MaGV", sql.Int, maGV)
+      .input("MaLHP", sql.Int, maLHP)
+      .input("TrangThai", sql.SmallInt, trangThai)
+      .query(`
+        UPDATE GIANGVIEN_LHP
+        SET MaGV = @MaGV, MaLHP = @MaLHP, TrangThai = @TrangThai
+        WHERE ID = @ID
+      `);
+
+    res.status(200).json({ id, maGV, maLHP, trangThai });
+  } catch (err) {
+    console.error("Lỗi khi cập nhật phân công giảng viên:", err);
+    res.status(500).json({ message: "Lỗi cập nhật phân công giảng viên" });
+  }
+};
+
+exports.deleteGiangVienLHP = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    await pool.request().input("ID", sql.Int, id)
+      .query("DELETE FROM GIANGVIEN_LHP WHERE ID = @ID");
+    res.status(200).json({ id, message: "Đã xóa" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi xóa phân công" });
+  }
+};
+
+exports.addGiangVienLHP = async (req, res) => {
+  const { maGV, maLHP, trangThai } = req.body;
+  if (!maGV || !maLHP) {
+    return res.status(400).json({ message: "Thiếu thông tin cần thiết: Mã giảng viên và Mã lớp học phần." });
+  }
+  try {
+    const result = await pool
+      .request()
+      .input("MaGV", sql.Int, maGV)
+      .input("MaLHP", sql.Int, maLHP)
+      .input("TrangThai", sql.SmallInt, trangThai || 1)  // Default trangThai = 1
+      .query(`
+        INSERT INTO GIANGVIEN_LHP (MaGV, MaLHP, TrangThai)
+        VALUES (@MaGV, @MaLHP, @TrangThai);
+        SELECT TOP 1 * FROM GIANGVIEN_LHP ORDER BY ID DESC;
+      `);
+
+    if (result && result.recordset && result.recordset[0]) {
+      const inserted = result.recordset[0];  // Get the inserted record
+
+      // Ensure that the response is wrapped in the 'data' key
+      res.status(201).json({
+          // Wrap the result in the 'data' key
+          id: inserted.ID,  // Ensure 'id' is included
+          MaGV: inserted.MaGV,
+          MaLHP: inserted.MaLHP,
+          TrangThai: inserted.TrangThai,
+        
+      });
+    } else {
+      console.error("Lỗi: Không có dữ liệu trả về từ cơ sở dữ liệu.");
+      res.status(400).json({ message: "Không có dữ liệu trả về từ cơ sở dữ liệu." });
+    }
+  } catch (err) {
+    console.error("Lỗi thêm phân công giảng viên:", err);
+    res.status(500).json({ message: "Lỗi thêm phân công giảng viên" });
   }
 };

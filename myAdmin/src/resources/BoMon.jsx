@@ -21,6 +21,7 @@ const BoMonFilter = [
 export const BoMonList = () => (
   <List filters={BoMonFilter}>
     <Datagrid rowClick="edit">
+      {/* <TextField source="id" label="ID" /> */}
       <TextField source="stt" label="STT" />
       <TextField source="TenBM" label="Tên Bộ Môn" />
       <TextField source="TenKhoa" label="Tên Khoa" />
@@ -32,7 +33,7 @@ export const BoMonList = () => (
 export const BoMonEdit = () => (
   <Edit>
     <SimpleForm>
-      {/* <TextInput source="id" disabled /> */}
+      <TextInput source="id" readOnly />
       <TextInput source="tenBM" label="Tên Bộ Môn" />
       <ReferenceInput source="maKhoa" reference="khoa" label="Khoa">
         <AutocompleteInput optionText="TenKhoa" label="Khoa"/>

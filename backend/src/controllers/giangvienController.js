@@ -1,4 +1,4 @@
-const { sql, pool } = require('../config/db');
+const { sql, pool } = require("../config/db");
 
 // exports.getLopHocPhanByGiangVien = async (req, res) => {
 //   const maGV = req.user.id;
@@ -20,19 +20,24 @@ const { sql, pool } = require('../config/db');
 // };
 
 exports.getLopHocPhanByGiangVien = async (req, res) => {
-  const maGV = req.user.id;
+  const maGV = req.user.id;  // ID của giảng viên
+
+  console.log("Giảng viên ID: ", maGV);  // Log ID giảng viên để kiểm tra
 
   try {
-    const result = await pool
-      .request()
-      .input("MaGV", sql.Int, maGV)
-      .query(`
+    const result = await pool.request().input("MaGV", sql.Int, maGV).query(`
         SELECT lhp.*, mh.TenMH, lh.MaLop
         FROM LOPHOCPHAN lhp
         JOIN MONHOC mh ON lhp.MaMH = mh.ID
         JOIN LOPHOC lh ON lhp.MaLH = lh.ID
         WHERE lhp.MaGV = @MaGV AND lhp.TrangThai = 1
       `);
+
+    // Kiểm tra xem có kết quả trả về hay không
+    if (result.recordset.length === 0) {
+      console.log("Không có lớp học phần nào cho giảng viên ID: ", maGV);
+      return res.status(404).json({ message: "Không tìm thấy lớp học phần" });
+    }
 
     res.json(result.recordset);
   } catch (err) {
@@ -46,9 +51,7 @@ exports.getLopHocPhanFullInfoByGV = async (req, res) => {
   const maGV = req.user.id;
   try {
     const poolConnection = await pool.connect();
-    const result = await poolConnection
-      .request()
-      .input("MaGV", sql.Int, maGV)
+    const result = await poolConnection.request().input("MaGV", sql.Int, maGV)
       .query(`
         SELECT lhp.ID, lhp.TenLHP, lhp.HocKy, lhp.NamHoc, mh.TenMH, lh.TenLP,
                COUNT(DISTINCT sv.ID) AS SoSinhVien,
@@ -69,13 +72,10 @@ exports.getLopHocPhanFullInfoByGV = async (req, res) => {
   }
 };
 
-
 exports.getDashboardLHP = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.request()
-      .input("MaLHP", id)
-      .query(`
+    const result = await pool.request().input("MaLHP", id).query(`
         SELECT 
           L.TenLHP,
           L.HocKy,
@@ -106,7 +106,7 @@ exports.getDashboardLHP = async (req, res) => {
             )
           ) AS SoLuongDaNop
         FROM LOPHOCPHAN L
-        JOIN GIANGVIENN GV ON L.MaGV = GV.ID
+        JOIN GIANGVIEN GV ON L.MaGV = GV.ID
         JOIN MONHOC MH ON L.MaMH = MH.ID
         JOIN LOPHOC LH ON L.MaLH = LH.ID
         WHERE L.ID = @MaLHP
@@ -121,19 +121,17 @@ exports.getDashboardLHP = async (req, res) => {
 
 exports.getAllGiangVien = async (req, res) => {
   try {
-    const result = await pool.request().query('SELECT * FROM GIANGVIEN');
+    const result = await pool.request().query("SELECT * FROM GIANGVIEN");
     res.json(result.recordset);
   } catch (err) {
-    res.status(500).json({ message: 'Lỗi khi lấy danh sách giảng viên' });
+    res.status(500).json({ message: "Lỗi khi lấy danh sách giảng viên" });
   }
 };
 
 exports.getGiangVienByLHP = async (req, res) => {
   const { maLHP } = req.query;
   try {
-    const result = await pool.request()
-      .input('MaLHP', sql.Int, maLHP)
-      .query(`
+    const result = await pool.request().input("MaLHP", sql.Int, maLHP).query(`
         SELECT sv.MaSinhVien, sv.HoTen, sv.MaSV
         FROM SINHVIEN_LHP slhp
         JOIN SINHVIEN sv ON slhp.MaSV = sv.ID
@@ -142,6 +140,6 @@ exports.getGiangVienByLHP = async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Lỗi khi lấy sinh viên' });
+    res.status(500).json({ message: "Lỗi khi lấy sinh viên" });
   }
 };

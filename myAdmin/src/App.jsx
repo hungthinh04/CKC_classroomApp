@@ -24,6 +24,8 @@ import {
   LopHocPhanList,
 } from "./resources/LopHocPhan";
 import './css/styles.css'; // Import custom styles
+import { PhanCongGiangVienCreate, PhanCongGiangVienEdit, PhanCongGiangVienList } from "./resources/PhanCongGV";
+import { PhanCongSinhVienCreate, PhanCongSinhVienEdit, PhanCongSinhVienList } from "./resources/PhanCongSV";
 const dataProvider = simpleRestProvider("http://localhost:3000/admin");
 
 function App() {
@@ -77,6 +79,21 @@ function App() {
         create={LopHocCreate}
         edit={LopHocEdit}
       />
+
+      <Resource
+  name="giangvien_lhp"
+  options={{ label: "Phân Công GV" }}
+  list={PhanCongGiangVienList}
+  create={PhanCongGiangVienCreate}
+  edit={PhanCongGiangVienEdit}
+/>
+<Resource
+  name="sinhvien_lhp"
+  options={{ label: "Phân Công SV" }}
+  list={PhanCongSinhVienList}
+  create={PhanCongSinhVienCreate}
+  edit={PhanCongSinhVienEdit}
+/>
       <Resource
         name="lophocphan"
         options={{ label: "Lớp Học Phần" }}

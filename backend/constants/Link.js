@@ -1,1 +1,1 @@
-module.exports.BASE_URL = "https://edc74116a3df.ngrok-free.app";
+module.exports.BASE_URL = "https://6c46dc866370.ngrok-free.app";

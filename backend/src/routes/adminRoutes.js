@@ -31,6 +31,16 @@ const {
   updateLopHocPhan,
   deleteLopHocPhan,
   addLopHocPhan,
+  getAllSinhVienLHP,
+  getSinhVienLHPById,
+  addSinhVienLHP,
+  updateSinhVienLHP,
+  deleteSinhVienLHP,
+  getGiangVienLHPById,
+  updateGiangVienLHP,
+  deleteGiangVienLHP,
+  addGiangVienLHP,
+  getAllGiangVienLHP,
 } = require("../controllers/adminController"); // Import getAllKhoa from adminController
 const { getAllBoMon } = require("../controllers/adminController"); // Import getAllKhoa from adminController
 const { getBoMonById } = require("../controllers/adminController"); // Import getBoMonById from adminController
@@ -102,5 +112,18 @@ router.get("/lophocphan/:id", getLopHocPhanById);
 router.post("/lophocphan", addLopHocPhan);
 router.put("/lophocphan/:id", updateLopHocPhan);
 router.delete("/lophocphan/:id", deleteLopHocPhan);
+
+
+router.get('/giangvien_lhp', getAllGiangVienLHP);
+router.get('/giangvien_lhp/:id', getGiangVienLHPById);
+router.post('/giangvien_lhp', addGiangVienLHP);
+router.put('/giangvien_lhp/:id', updateGiangVienLHP);
+router.delete('/giangvien_lhp/:id', deleteGiangVienLHP);
+
+router.get('/sinhvien_lhp', getAllSinhVienLHP);
+router.get('/sinhvien_lhp/:id', getSinhVienLHPById);
+router.post('/sinhvien_lhp', addSinhVienLHP);
+router.put('/sinhvien_lhp/:id', updateSinhVienLHP);
+router.delete('/sinhvien_lhp/:id', deleteSinhVienLHP);
 
 module.exports = router;

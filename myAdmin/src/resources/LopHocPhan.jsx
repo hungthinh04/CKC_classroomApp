@@ -40,7 +40,7 @@ export const LopHocPhanList = () => (
       <TextField source="TenLHP" label="Tên LHP" />
       <DateField source="NgayTao" label="Ngày Tạo" />
       <NumberField source="HocKy" label="Học Kỳ" />
-      {/* <NumberField source="ChinhSach" label="Chính Sách" /> */}
+      <NumberField source="ChinhSach" label="Chính Sách" />
       <NumberField source="NamHoc" label="Năm Học" />
       <ReferenceField source="MaGV" reference="giangvien" label="Tên giảng viên" link={false}>
         <TextField source="TenGV" label="Tên Giảng Viên" />
@@ -51,8 +51,8 @@ export const LopHocPhanList = () => (
       <ReferenceField source="MaMH" reference="monhoc" label="Môn Học" link={false}>
         <TextField source="TenMH" />
       </ReferenceField>
-      {/* <NumberField source="LuuTru" label="Lưu Trữ" />
-      <NumberField source="TrangThai" label="Trạng Thái" /> */}
+     <NumberField source="LuuTru" label="Lưu Trữ" />
+      <NumberField source="TrangThai" label="Trạng Thái" />
       <EditButton />
       <DeleteButton />
     </Datagrid>
