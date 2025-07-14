@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.hungthinh39.CKC_ClassroomApp"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,18 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "266cb27f-7971-43fa-b0a8-9bfd7e32c629"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/266cb27f-7971-43fa-b0a8-9bfd7e32c629"
     }
   }
 }

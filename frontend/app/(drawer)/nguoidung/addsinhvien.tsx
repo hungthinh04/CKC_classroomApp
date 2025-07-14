@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "@/constants/Link";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function MoiGiangVienScreen() {
+export default function MoiSinhVienScreen() {
   const { maLHP } = useLocalSearchParams();
   const [email, setEmail] = useState("");
 
@@ -41,39 +41,60 @@ export default function MoiGiangVienScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>📧 Nhập email sinh viên:</Text>
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder="sinhvien@example.com"
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+    <View style={{ flex: 1, backgroundColor: "#f4f7fc" }}>
+      {/* Nút quay lại trên đầu */}
+      <View style={{ paddingHorizontal: 24, paddingTop: 38, backgroundColor: "#f4f7fc" }}>
+        <TouchableOpacity
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 16,
+            gap: 7,
+            alignSelf: "flex-start",
+          }}
+          onPress={() => router.replace(`/(drawer)/lopHocPhan/${maLHP}/(tabs)/peopleScreen`)}
+        >
+          <Ionicons name="arrow-back" size={22} color="#4666ec" />
+          <Text style={{ color: "#4666ec", fontWeight: "bold", fontSize: 16 }}>
+            Quay lại bảng tin
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Nút mời sinh viên */}
-      <TouchableOpacity
-        style={[
-          styles.button,
-          { backgroundColor: email ? "#6EC1E4" : "#D1EAF9" },
-        ]}
-        onPress={handleInvite}
-        disabled={!email}
-      >
-        <Ionicons name="mail" size={18} color="#fff" style={styles.icon} />
-        <Text style={styles.buttonText}> Mời sinh viên</Text>
-      </TouchableOpacity>
+      {/* Form ở giữa */}
+      <View style={styles.formContainer}>
+        <Text style={styles.label}>📧 Nhập email sinh viên:</Text>
+        <TextInput
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="sinhvien@example.com"
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+
+        <TouchableOpacity
+          style={[
+            styles.button,
+            { backgroundColor: email ? "#6EC1E4" : "#D1EAF9" },
+          ]}
+          onPress={handleInvite}
+          disabled={!email}
+        >
+          <Ionicons name="mail" size={18} color="#fff" style={styles.icon} />
+          <Text style={styles.buttonText}> Mời sinh viên</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  formContainer: {
     flex: 1,
-    backgroundColor: "#f4f7fc",
     justifyContent: "center",
     paddingHorizontal: 24,
+    marginTop: -70, // đẩy lên gần giữa hơn nếu muốn
   },
   label: {
     fontWeight: "bold",

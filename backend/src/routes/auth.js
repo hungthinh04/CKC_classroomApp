@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 router.post('/login', login);
 router.post('/auth', loginUser);
-router.get("/profile", authenticateToken, getProfile); // Bảo vệ với JWT token
+router.get("/profilee", authenticateToken, getProfile); // Bảo vệ với JWT token
 router.put("/profile", authenticateToken, updateProfile); // Cập nhật thông tin người dùng
 
 

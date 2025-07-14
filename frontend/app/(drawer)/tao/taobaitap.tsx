@@ -124,7 +124,7 @@ function BaseForm({
             {
               text: "Xem danh sách",
               onPress: () => {
-                router.back();
+                router.replace(`/(drawer)/lopHocPhan/${maLHP}/(tabs)/notifications`);
               },
             },
           ]
@@ -146,6 +146,20 @@ function BaseForm({
   return (
     <View style={styles.bg}>
       <View style={styles.card}>
+
+        <TouchableOpacity
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          marginBottom: 10,
+          alignSelf: "flex-start",
+        }}
+        onPress={() => router.replace(`/(drawer)/lopHocPhan/${maLHP}/(tabs)/notifications`)}
+      >
+        <Ionicons name="arrow-back" size={22} color="#60a5fa" />
+        <Text style={{ color: "#60a5fa", fontWeight: "bold", fontSize: 16 }}>Quay lại</Text>
+      </TouchableOpacity>
         <Text style={styles.header}>{title}</Text>
 
         <Text style={styles.label}>Tiêu đề</Text>

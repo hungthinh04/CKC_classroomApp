@@ -54,14 +54,21 @@ export default function LopHocPhanDetail() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/lophocphan/${id}`);
+      
+     const token = await AsyncStorage.getItem("token");
+
+const res = await fetch(`${BASE_URL}/lophocphan/${id}`, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
       const res1 = await fetch(`${BASE_URL}/baiviet/${id}`);
 
       const data = await res.json();
       const data1 = await res1.json();
-
-      setLop(data);
-      setBaiViet(data1);
+console.log(data,"akasdk")
+      setLop(data); 
+       setBaiViet(Array.isArray(data1) ? data1 : []); 
     } catch (err) {
       console.error("Lỗi khi lấy bài viết:", err);
     }
@@ -117,14 +124,12 @@ export default function LopHocPhanDetail() {
         <View style={styles.headerContent}>
           <Text style={styles.className}>{tenLHP}</Text>
           <Text style={styles.classMeta}>
-            GV: {baiViet[0]?.HoGV} {baiViet[0]?.TenGV}
-          </Text>
-          <Text style={styles.classMeta}>
-            Ngày tạo:{" "}
-            {lop?.NgayTao
-              ? new Date(lop.NgayTao).toLocaleDateString("vi-VN")
-              : "Không rõ"}
-          </Text>
+  Giảng Viên: {lop?.HoGV} {lop?.TenGV}
+</Text>
+<Text style={styles.classMeta}>
+  Học kỳ: {lop?.HocKy} - Năm học: {lop?.NamHoc-1}-{parseInt(lop?.NamHoc)}
+</Text>
+
         </View>
       </View>
 
@@ -147,12 +152,15 @@ export default function LopHocPhanDetail() {
 
       {/* Danh sách bài viết */}
       <Text style={styles.sectionTitle}>Thông báo lớp</Text>
-      {baiViet
-        .filter((bv) => bv.LoaiBV === 0)
-        .map((bv) => (
-          <View key={bv.ID} style={styles.postCard}>
-            {/* Dấu ba chấm tuyệt đối góc phải trên */}
-            <TouchableOpacity
+      {baiViet.length === 0 ? (
+        <Text>Không có thông báo nào</Text>
+      ) : (
+        baiViet
+          .filter((bv) => bv.LoaiBV === 0)
+          .map((bv) => (
+            <View key={bv.ID} style={styles.postCard}>
+              {/* Dấu ba chấm tuyệt đối góc phải trên */}
+              <TouchableOpacity
               style={styles.ellipsisBtn}
               onPress={() => setShowMenuId(showMenuId === bv.ID ? null : bv.ID)}
               hitSlop={12}
@@ -233,7 +241,9 @@ export default function LopHocPhanDetail() {
                 </>
               )}
           </View>
-        ))}
+          ))
+      ) }
+
     </ScrollView>
   );
 }

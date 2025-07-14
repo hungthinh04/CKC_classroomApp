@@ -4,6 +4,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "@/constants/Link";
 import { Ionicons } from "@expo/vector-icons";
+import PeopleScreen from './../(class)/lopHocPhan/[id]/(tabs)/peopleScreen';
 
 export default function MoiGiangVienScreen() {
   const { maLHP } = useLocalSearchParams();
@@ -41,6 +42,28 @@ export default function MoiGiangVienScreen() {
   };
 
   return (
+  <View style={{ flex: 1, backgroundColor: "#F0F8FF" }}>
+    {/* Nút Quay lại luôn trên đầu */}
+    <View style={{ paddingHorizontal: 18, paddingTop: 40 }}>
+      <TouchableOpacity
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 5,
+          alignSelf: "flex-start",
+        }}
+        onPress={() =>
+          router.replace(`/(drawer)/lopHocPhan/${maLHP}/(tabs)/peopleScreen`)
+        }
+      >
+        <Ionicons name="arrow-back" size={22} color="#4666ec" />
+        <Text style={{ color: "#4666ec", fontWeight: "bold", fontSize: 16 }}>
+          Quay lại bảng tin
+        </Text>
+      </TouchableOpacity>
+    </View>
+
+    {/* Form ở giữa */}
     <View style={styles.container}>
       <Text style={styles.label}>📧 Nhập email giảng viên:</Text>
       <TextInput
@@ -51,12 +74,10 @@ export default function MoiGiangVienScreen() {
         autoCapitalize="none"
         keyboardType="email-address"
       />
-
-      {/* Nút mời giảng viên */}
       <TouchableOpacity
         style={[
           styles.button,
-          { backgroundColor: email ? "#6EC1E4" : "#D1EAF9" }, // Màu xanh nước
+          { backgroundColor: email ? "#6EC1E4" : "#D1EAF9" },
         ]}
         onPress={handleInvite}
         disabled={!email}
@@ -65,7 +86,9 @@ export default function MoiGiangVienScreen() {
         <Text style={styles.buttonText}> Mời Giảng viên</Text>
       </TouchableOpacity>
     </View>
-  );
+  </View>
+);
+
 }
 
 const styles = StyleSheet.create({

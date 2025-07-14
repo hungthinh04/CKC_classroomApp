@@ -13,7 +13,8 @@ import {
 import { useAuth } from "../../../stores/useAuth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "@/constants/Link";
-import { LinearGradient } from "expo-linear-gradient"; // ADD
+import { LinearGradient } from "expo-linear-gradient";
+import { useIsFocused } from "@react-navigation/native";
 
 type LopHocPhan = {
   id: number;
@@ -27,9 +28,32 @@ type LopHocPhan = {
 };
 
 export default function HomeScreen() {
-  const { user, logout, checkLogin } = useAuth();
+  const { user, logout, checkLogin, setUser } = useAuth();
   const [lophocphan, setLophocphan] = useState<LopHocPhan[]>([]);
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch(`${BASE_URL}/api/users/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data); // Giả sử useAuth có setUser
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchUserInfo();
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -52,42 +76,41 @@ export default function HomeScreen() {
         },
       });
 
-      const contentType = res.headers.get("content-type");
-      if (!res.ok || !contentType?.includes("application/json")) {
-        const text = await res.text();
-        throw new Error(`Unexpected response: ${text}`);
+      if (!res.ok) {
+        throw new Error("Không thể lấy danh sách lớp học phần");
       }
 
       const data = await res.json();
 
-      const mapped = data.map((item: any) => ({
-        id: item.ID,
-        tenLHP: item.TenLHP,
-        hocKy: item.HocKy,
-        namHoc: item.NamHoc,
-        maGV: item.MaGV,
-        tenGV: item.TenGV || item.TenMH || "",
-        tenMH: item.TenMH || "",
-        maLop: item.MaLop || "",
-      }));
-      setLophocphan(mapped);
+      setLophocphan(
+        Array.isArray(data)
+          ? data.map((item: any) => ({
+              id: item.ID,
+              tenLHP: item.TenLHP,
+              hocKy: item.HocKy,
+              namHoc: item.NamHoc,
+              maGV: item.MaGV,
+              tenGV: item.TenGV || "",
+              tenMH: item.TenMH || "",
+              maLop: item.MaLop || "",
+            }))
+          : []
+      );
     } catch (error) {
       console.error("Fetch LHP error:", error);
+      setLophocphan([]);
     }
   };
 
   useEffect(() => {
-    const init = async () => {
-      await checkLogin();
-    };
-    init();
+    checkLogin();
   }, []);
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && isFocused) {
       fetchLHP();
     }
-  }, [user]);
+  }, [user, isFocused]);
 
   const getInitial = () => {
     if (user?.email) return user.email.charAt(0).toUpperCase();
@@ -97,19 +120,19 @@ export default function HomeScreen() {
   const handleMenuOption = (option: string) => {
     if (option === "logout") {
       Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
-        {
-          text: "Hủy",
-          style: "cancel",
-        },
-        {
-          text: "Đồng ý",
-          onPress: handleLogout,
-        },
+        { text: "Hủy", style: "cancel" },
+        { text: "Đồng ý", onPress: handleLogout },
       ]);
     } else if (option === "profile") {
-      router.push(`/profile/${user?.id}`); // Đường dẫn tới trang thông tin tài khoản
+      router.push(`/profile/${user?.id}`);
     }
   };
+
+  const handleAddLHP = () => {
+    router.push("/tao/addLHP");
+  };
+
+  const isGV = user?.role === 1;
 
   return (
     <View style={styles.container}>
@@ -147,8 +170,7 @@ export default function HomeScreen() {
           }
         />
       </View>
-
-      {/* Weekly Box - LinearGradient */}
+      {/* Weekly Box */}
       <LinearGradient
         colors={["#6e81f3", "#a6b5fa"]}
         style={styles.weekBox}
@@ -167,7 +189,6 @@ export default function HomeScreen() {
           <Text style={styles.link}>Xem danh sách việc cần làm</Text>
         </TouchableOpacity>
       </LinearGradient>
-
       {/* Class Cards */}
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {lophocphan.length === 0 ? (
@@ -213,6 +234,16 @@ export default function HomeScreen() {
           ))
         )}
       </ScrollView>
+      {/* FAB: Nút thêm lớp học phần */}
+      {isGV && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAddLHP}
+          activeOpacity={0.82}
+        >
+          <Ionicons name="add" size={34} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -351,4 +382,22 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     padding: 4,
   },
+  addButton: {
+    position: "absolute",
+    bottom: 30,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#3b60f3",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#242556",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 12,
+    zIndex: 10,
+  },
 });
+

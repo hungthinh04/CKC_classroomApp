@@ -30,7 +30,7 @@ router.get("/:id", controller.getBaiVietByLHP);
 router.get('/bainop/bv/:maBaiViet', controller.getBaiNopByBaiViet);
 // router.post("/tao", auth, checkGiangVien, controller.createBaiViet);
 
-router.delete("/:id", auth, checkGiangVien, controller.deleteBaiViet);
+router.delete("/:id", auth, checkGiangVien, controller.deleteBaiNop);
 // router.post("/nopbai", controller.nopBai);
 router.post("/nopbai", auth, upload.single("file"), controller.nopBai);
 router.get('/chitiet/:id', controller.getBaiVietById);
@@ -40,7 +40,7 @@ router.get("/:id/comments", controllerComment.getCommentsByPostId);
 
 // Gửi comment mới (phải đăng nhập)
 router.post("/:id/comment", verifyToken, controllerComment.postComment);
-router.get('/baiviet/canlam/:maSV', controller.getBaiTapCanLam);
+router.get('/canlam/:maSV', controller.getBaiTapCanLam);
 
-
+// router.get('/me/role', auth, controller.getMyRole);
 module.exports = router;

@@ -48,7 +48,7 @@ export default function ProfileScreen() {
       // Lấy thông tin profile từ API (giả sử bạn đã gọi API để lấy thông tin đầy đủ)
       const fetchProfile = async () => {
         const token = await AsyncStorage.getItem("token");
-        const res = await fetch(`${BASE_URL}/api/profile`, {
+        const res = await fetch(`${BASE_URL}/api/profilee`, {
             
           method: "GET",
           headers: {

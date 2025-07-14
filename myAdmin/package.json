@@ -12,6 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.80.10",
     "axios": "^1.10.0",
+    "bcrypt": "^6.0.0",
     "ra-data-json-server": "^5.8.3",
     "ra-data-simple-rest": "^5.8.3",
     "react": "^19.1.0",

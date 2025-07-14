@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   View,
@@ -27,6 +27,7 @@ export default function BaiVietDetail() {
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [editingComment, setEditingComment] = useState<any>(null);
+ const [bv, setBv] = useState<any>(null);
 
   const isImage = (url: string) => url.match(/\.(jpeg|jpg|png|gif|webp)$/i);
 
@@ -182,6 +183,24 @@ export default function BaiVietDetail() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      {/* NÚT QUAY LẠI */}
+      <TouchableOpacity
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginLeft: 15,
+          marginTop: Platform.OS === "ios" ? 52 : 20,
+          marginBottom: 5,
+          gap: 4,
+        }}
+        onPress={() => {
+          router.replace(`/(drawer)/lopHocPhan/${baiViet?.MaLHP}/(tabs)/dashboard`);
+        }}
+      >
+        <Ionicons name="arrow-back" size={22} color="#60a5fa" />
+        <Text style={{ color: "#60a5fa", fontWeight: "bold", fontSize: 16 }}>Quay lại</Text>
+      </TouchableOpacity>
+
       {/* Bài viết chính */}
       <View style={styles.mainCard}>
         <Text style={styles.title}>{baiViet.tieuDe}</Text>

@@ -128,33 +128,52 @@ exports.loginUser = async (req, res) => {
     console.error("Lỗi đăng nhập:", err);
     res.status(500).json({ message: "Lỗi máy chủ" });
   }
-};
-exports.getProfile = async (req, res) => {
-  const userId = req.user.id; // Lấy thông tin người dùng từ JWT token (middleware bảo vệ)
+};exports.getProfile = async (req, res) => {
+  const userId = req.user.id; // Lấy từ JWT
 
   try {
-    const result = await pool
-      .request()
+    const result = await pool.request()
       .input("id", sql.Int, userId)
-      .query("SELECT * FROM USERS WHERE ID = @id");
+      .query(`
+        SELECT 
+          u.ID,
+          u.Email,
+          u.Quyen,
+          u.HoTen AS HoTenUser,
+          u.TrangThai,
+          s.HoTen AS HoTenSinhVien,
+          g.HoGV,
+          g.TenGV,
+          g.ID AS GiangVienID
+        FROM USERS u
+        LEFT JOIN SINHVIEN s ON s.MaTK = u.ID
+        LEFT JOIN GIANGVIEN g ON g.MaTK = u.ID
+        WHERE u.ID = @id
+      `);
 
     const user = result.recordset[0];
-    // console.log(user," user");
+
     if (!user) {
       return res.status(404).json({ message: "Không tìm thấy thông tin người dùng" });
+    }
+
+    // Xác định tên hiển thị
+    let hoTen = user.HoTenUser;
+    if (user.Quyen === 0 && user.HoTenSinhVien) { // Sinh viên
+      hoTen = user.HoTenSinhVien;
+    } else if (user.Quyen === 1 && user.HoGV && user.TenGV) { // Giảng viên
+      hoTen = `${user.HoGV} ${user.TenGV}`;
     }
 
     res.status(200).json({
       id: user.ID,
       email: user.Email,
       role: user.Quyen,
-      hoTen: user.HoTen,
+      hoTen,
       trangThai: user.TrangThai,
-      sdt: user.SDT,
-      diaChi: user.DiaChi,
-      maGiangVien: user.MaGiangVien,
+      // Có thể bổ sung thêm trường cho giảng viên/sinh viên nếu cần
+      maGiangVien: user.GiangVienID || null,
     });
-    console.log(`Lấy thông tin người dùng: ${JSON.stringify(user)}`);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi khi lấy thông tin tài khoản" });

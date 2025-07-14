@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type User = {
   id: number;
   email: string;
+  maSV: String;
   hoTen: String;
   role: number; // 0: Giảng viên, 1: Sinh viên
   matKhau: string;

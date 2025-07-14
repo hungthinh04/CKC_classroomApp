@@ -102,12 +102,12 @@ export default function BaiTapScreen() {
   return (
     <View style={styles.root}>
       <FlatList
-        data={tasks}
-        keyExtractor={(item) => item?.id?.toString()}
-        contentContainerStyle={{ padding: 18, paddingBottom: 90 }}
-        ListEmptyComponent={
-          <Text style={{ color: "#aaa", textAlign: "center", marginTop: 24, fontSize: 15 }}>
-            Không có bài tập nào!
+  data={tasks}
+  keyExtractor={(item) => item?.id?.toString()}
+  contentContainerStyle={{ padding: 18, paddingBottom: 90 }}
+  ListEmptyComponent={
+    <Text style={{ color: "#aaa", textAlign: "center", marginTop: 24, fontSize: 15 }}>
+      Không có bài tập nào!
           </Text>
         }
         renderItem={({ item }) => (

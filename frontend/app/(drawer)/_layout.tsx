@@ -68,6 +68,10 @@ export default function RootLayout() {
         name="profile/[id]"
         options={{ drawerItemStyle: { display: "none" } }}
       />
+      <Drawer.Screen
+        name="tao/addLHP"
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
     </Drawer>
   );
 }

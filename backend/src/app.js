@@ -39,4 +39,5 @@ app.use('/sinhvien_lhp', require('./routes/sinhvien_lhp'));
 app.use('/api/comments', require("./routes/nhanxet"));
 // app.use('/auth', require('./routes/auth'));
 
+
 module.exports = app;

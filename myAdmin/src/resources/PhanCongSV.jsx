@@ -73,13 +73,13 @@ export const PhanCongSinhVienCreate = () => (
 export const PhanCongSinhVienEdit = () => (
   <Edit>
     <SimpleForm>
-      <ReferenceInput source="maSV" reference="sinhvien" label="Sinh viên">
+      <ReferenceInput source="MaSV" reference="sinhvien" label="Sinh viên">
         <AutocompleteInput label="Họ và Tên"
           optionText={(record) => `${record.HoTen || ""}`}
         />
       </ReferenceInput>
       <ReferenceInput
-        source="maLHP"
+        source="MaLHP"
         reference="lophocphan"
         label="Lớp học phần"
       >

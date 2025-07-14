@@ -29,7 +29,7 @@ export const SinhVienList = () => (
       <TextField source="MaTK" label="Mã TK" />
       
       <ReferenceField source="MaLopHoc" reference="lophoc" label="Lớp học" link={false}>
-        <TextField source="tenLP" />
+        <TextField source="tenLop" />
       </ReferenceField>
       <EditButton />
     </Datagrid>
@@ -44,7 +44,7 @@ export const SinhVienEdit = () => (
       <TextInput source="HoTen" label="Họ tên" />
       <NumberInput source="MaTK" label="Mã tài khoản" readOnly />
       <ReferenceInput source="MaLopHoc" reference="lophoc" label="Lớp học">
-        <AutocompleteInput optionText="tenLP" />
+        <AutocompleteInput optionText="tenLop" />
       </ReferenceInput>
     </SimpleForm>
   </Edit>
@@ -56,7 +56,7 @@ export const SinhVienCreate = () => (
       <TextInput source="maSinhVien" label="Mã sinh viên" readOnly />
       <NumberInput source="maTK" label="Mã tài khoản" readOnly />
       <ReferenceInput source="maLopHoc" reference="lophoc" label="Mã Lớp học">
-        <AutocompleteInput optionText="tenLP" label="Tên Lớp Học"/>
+        <AutocompleteInput optionText="tenLop" label="Tên Lớp Học"/>
       </ReferenceInput>
       <TextInput source="hoTen" label="Họ tên" />
     </SimpleForm>

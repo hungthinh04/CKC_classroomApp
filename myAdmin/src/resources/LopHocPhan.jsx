@@ -46,7 +46,7 @@ export const LopHocPhanList = () => (
         <TextField source="TenGV" label="Tên Giảng Viên" />
       </ReferenceField>
       <ReferenceField source="MaLH" reference="lophoc" label="Lớp Học" link={false}>
-        <TextField source="tenLP" />
+        <TextField source="tenLop" />
       </ReferenceField>
       <ReferenceField source="MaMH" reference="monhoc" label="Môn Học" link={false}>
         <TextField source="TenMH" />
@@ -105,7 +105,7 @@ export const LopHocPhanEdit = () => (
 
       {/* ReferenceInput để lấy Mã Lớp Học từ bảng LOPHOC */}
       <ReferenceInput source="maLH" reference="lophoc" label="Lớp Học">
-        <AutocompleteInput optionText="tenLP" />
+        <AutocompleteInput optionText="tenLop" />
       </ReferenceInput>
 
       {/* ReferenceInput để lấy Mã Môn Học từ bảng MONHOC */}
@@ -152,7 +152,7 @@ export const LopHocPhanCreate = () => (
 
       {/* ReferenceInput để lấy Mã Lớp Học từ bảng LOPHOC */}
       <ReferenceInput source="maLH" reference="lophoc" label="Lớp Học">
-        <AutocompleteInput optionText="tenLP" />
+        <AutocompleteInput optionText="tenLop" />
       </ReferenceInput>
 
       {/* ReferenceInput để lấy Mã Môn Học từ bảng MONHOC */}

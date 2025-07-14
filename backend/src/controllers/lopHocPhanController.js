@@ -3,10 +3,24 @@ const { pool, sql } = require("../config/db");
 exports.getLopHocPhanById = async (req, res) => {
   const { id } = req.params;
   try {
+    // Lấy thông tin lớp học phần + join GIANGVIEN
     const result = await pool
       .request()
       .input("ID", sql.Int, id)
-      .query("SELECT * FROM LOPHOCPHAN WHERE ID = @ID");
+      .query(`
+        SELECT 
+          LHP.*, 
+          GV.HoGV, 
+          GV.TenGV 
+        FROM LOPHOCPHAN LHP
+        LEFT JOIN GIANGVIEN GV ON LHP.MaGV = GV.MaGV
+        WHERE LHP.ID = @ID
+      `);
+
+    if (!result.recordset[0]) {
+      return res.status(404).json({ message: "Không tìm thấy lớp học phần" });
+    }
+
     res.json(result.recordset[0]);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy lớp học phần" });
@@ -29,44 +43,41 @@ exports.getBaiTapByLopHocPhan = async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi lấy bài tập" });
   }
 };
-
 exports.getGiangVienVaSinhVien = async (req, res) => {
   const maLHP = req.query.maLHP;
 
   try {
-    const result = await pool.request().input("MaLHP", sql.Int, maLHP).query(`
-  SELECT 
-    gv.ID AS maGV, gv.HoGV + ' ' + gv.TenGV AS tenGV,
-    sv.ID AS maSV, sv.HoTen AS tenSV
-  FROM LOPHOCPHAN lhp
-  JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID
-  JOIN SINHVIEN_LHP slhp ON lhp.ID = slhp.MaLHP
-  JOIN SINHVIEN sv ON sv.ID = slhp.MaSV
-  WHERE lhp.ID = @MaLHP
-`);
+    // Lấy danh sách giảng viên từ GIANGVIEN_LHP
+    const resultGV = await pool.request()
+      .input("MaLHP", sql.Int, maLHP)
+      .query(`
+        SELECT gv.ID AS maGV, gv.HoGV + ' ' + gv.TenGV AS tenGV
+        FROM GIANGVIEN_LHP glhp
+        JOIN GIANGVIEN gv ON glhp.MaGV = gv.ID
+        WHERE glhp.MaLHP = @MaLHP
+      `);
 
-    const rows = result.recordset;
+    // Lấy danh sách sinh viên từ SINHVIEN_LHP
+    const resultSV = await pool.request()
+      .input("MaLHP", sql.Int, maLHP)
+      .query(`
+        SELECT sv.ID AS maSV, sv.HoTen AS tenSV
+        FROM SINHVIEN_LHP slhp
+        JOIN SINHVIEN sv ON slhp.MaSV = sv.ID
+        WHERE slhp.MaLHP = @MaLHP
+      `);
 
-    if (rows.length === 0) {
-      return res.json({ giangVien: null, sinhViens: [] });
-    }
-
-    const giangVien = {
-      maGV: rows[0].maGV,
-      tenGV: rows[0].tenGV,
-    };
-
-    const sinhViens = rows.map((r) => ({
-      maSV: r.maSV,
-      tenSV: r.tenSV,
-    }));
-
-    res.json({ giangVien, sinhViens });
+    const giangViens = resultGV.recordset;
+    const sinhViens = resultSV.recordset;
+    console.log(giangViens, "Giảng viên:");
+    console.log(sinhViens, "Sinh viên:");
+    res.json({ giangViens, sinhViens });
   } catch (err) {
     console.error("Lỗi truy vấn:", err);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
 
 exports.addSinhVien = async (req, res) => {
   const { maLHP } = req.params;
@@ -141,32 +152,87 @@ exports.addGiangVien = async (req, res) => {
   if (!email) return res.status(400).json({ message: "Thiếu email" });
 
   try {
-    // Tìm user có role giảng viên
-    const userRes = await pool
-      .request()
-      .input("Email", sql.VarChar, email)
-      .query("SELECT ID FROM USERS WHERE Email = @Email AND Quyen = 1");
+    // Lấy ID user
+   const userRes = await pool.request()
+  .input("Email", sql.VarChar, email)
+  .query("SELECT ID FROM USERS WHERE Email = @Email AND Quyen = 1");
 
-    if (userRes.recordset.length === 0) {
-      return res.status(404).json({ message: "Không tìm thấy giảng viên" });
-    }
+if (userRes.recordset.length === 0)
+  return res.status(404).json({ message: "Không tìm thấy giảng viên" });
 
-    const maTK = userRes.recordset[0].ID;
+const maTK = userRes.recordset[0].ID;
 
-    // Cập nhật lại lớp học phần
-    await pool
-      .request()
-      .input("MaTK", sql.Int, maTK)
-      .input("MaLHP", sql.Int, maLHP).query(`
-        UPDATE LOPHOCPHAN SET MaGV = @MaTK WHERE ID = @MaLHP
+// Lấy ID GIANGVIEN
+const gvRes = await pool.request()
+  .input("MaTK", sql.Int, maTK)
+  .query("SELECT ID FROM GIANGVIEN WHERE MaTK = @MaTK");
+
+if (gvRes.recordset.length === 0)
+  return res.status(404).json({ message: "Tài khoản chưa đăng ký làm giảng viên" });
+
+    // Lấy ID giảng viên
+      if (gvRes.recordset.length === 0)
+      return res.status(404).json({ message: "Tài khoản chưa đăng ký làm giảng viên" });
+
+    const maGV = gvRes.recordset[0].ID;
+
+    // Kiểm tra đã có trong lớp chưa
+    const checkExist = await pool.request()
+      .input("MaGV", sql.Int, maGV)
+      .input("MaLHP", sql.Int, maLHP)
+      .query("SELECT * FROM GIANGVIEN_LHP WHERE MaGV = @MaGV AND MaLHP = @MaLHP");
+
+    if (checkExist.recordset.length > 0)
+      return res.status(409).json({ message: "Giảng viên đã có trong lớp học phần này" });
+
+    // Thêm mới
+    await pool.request()
+      .input("MaGV", sql.Int, maGV)
+      .input("MaLHP", sql.Int, maLHP)
+      .input("TrangThai", sql.SmallInt, 1)
+      .query(`
+        INSERT INTO GIANGVIEN_LHP (MaGV, MaLHP, TrangThai)
+        VALUES (@MaGV, @MaLHP, @TrangThai)
       `);
 
-    res.json({ message: "Đã cập nhật giảng viên cho lớp học phần" });
+    res.json({ message: "✅ Đã thêm giảng viên vào lớp học phần" });
   } catch (err) {
     console.error("❌ Lỗi thêm GV:", err);
     res.status(500).json({ message: "Lỗi khi thêm giảng viên" });
   }
 };
+
+exports.removeGiangVien = async (req, res) => {
+  const { maLHP } = req.params;
+  const { maGV } = req.body;
+  const currentUserId = req.user?.id;
+
+  try {
+    // Lấy ID của giảng viên hiện tại
+    const currentGVRes = await pool
+      .request()
+      .input("MaTK", sql.Int, currentUserId)
+      .query("SELECT ID FROM GIANGVIEN WHERE MaTK = @MaTK");
+    const currentGVId = currentGVRes.recordset[0]?.ID;
+
+    if (parseInt(maGV) === currentGVId) {
+      return res.status(403).json({ message: "Bạn không thể xóa chính mình khỏi lớp học phần!" });
+    }
+
+    await pool
+      .request()
+      .input("MaLHP", sql.Int, maLHP)
+      .input("MaGV", sql.Int, maGV)
+      .query("DELETE FROM GIANGVIEN_LHP WHERE MaLHP = @MaLHP AND MaGV = @MaGV");
+
+    res.json({ message: "Đã xóa giảng viên khỏi lớp học phần" });
+  } catch (err) {
+    console.error("❌ Lỗi xóa giảng viên:", err);
+    res.status(500).json({ message: "Lỗi khi xóa giảng viên" });
+  }
+};
+
+
 
 exports.removeSinhVien = async (req, res) => {
   const { maLHP } = req.params;
@@ -185,5 +251,204 @@ exports.removeSinhVien = async (req, res) => {
   } catch (err) {
     console.error("❌ Lỗi xóa sinh viên:", err);
     res.status(500).json({ message: "Lỗi khi xóa sinh viên" });
+  }
+};
+// exports.addLopHocPhan = async (req, res) => {
+//   const { tenLHP, hocKy, namHoc, maMH, trangThai } = req.body;
+
+//   const userId = req.user?.id;
+//   console.log(req.body, "Dữ liệu lớp học phần");
+//   console.log(userId, "ID Giảng viên");
+//   if (!userId) {
+//     return res.status(400).json({ message: "Không thể xác định giảng viên, vui lòng đăng nhập lại." });
+//   }
+
+//   try {
+//     // Lấy ID giảng viên từ bảng GIANGVIEN dựa trên MaTK
+//     const resultGV = await pool
+//       .request()
+//       .input("userId", sql.Int, userId)
+//       .query("SELECT ID FROM GIANGVIEN WHERE MaTK = @userId");
+
+//     if (!resultGV.recordset.length) {
+//       return res.status(404).json({ message: "Giảng viên không tìm thấy" });
+//     }
+//     const maGV = resultGV.recordset[0].ID;
+
+//     // Lấy MaMH từ tên môn học
+//     const checkMonHoc = await pool
+//   .request()
+//   .input("MaMH", sql.Int, maMH)
+//   .query("SELECT * FROM MONHOC WHERE ID = @MaMH");
+
+// if (!checkMonHoc.recordset.length) {
+//   return res.status(400).json({ message: "Môn học không hợp lệ" });
+// }
+//     // Thêm lớp học phần vào bảng LOPHOCPHAN
+//     await pool
+//   .request()
+//   .input("TenLHP", sql.NVarChar(255), tenLHP)
+//   .input("HocKy", sql.SmallInt, hocKy)
+//   .input("NamHoc", sql.Int, namHoc)
+//   .input("MaGV", sql.Int, maGV)
+//   .input("MaMH", sql.Int, maMH) // Dùng biến maMH từ req.body
+//   .input("TrangThai", sql.SmallInt, trangThai || 1)
+//   .query(`
+//     INSERT INTO LOPHOCPHAN (TenLHP, HocKy, NamHoc, MaGV, MaMH, TrangThai)
+//     VALUES (@TenLHP, @HocKy, @NamHoc, @MaGV, @MaMH, @TrangThai);
+//     SELECT SCOPE_IDENTITY() AS ID;
+//   `);
+
+//     res.status(201).json({ message: "Lớp học phần đã được tạo." });
+//   } catch (error) {
+//     console.error("Lỗi khi thêm lớp học phần:", error);
+//     res.status(500).json({ message: "Không thể thêm lớp học phần." });
+//   }
+// };
+
+
+exports.addLopHocPhan = async (req, res) => {
+  const { tenLHP, hocKy, namHoc, maMH, trangThai } = req.body;
+
+  const userId = req.user?.id;
+  console.log(req.body, "Dữ liệu lớp học phần");
+  console.log(userId, "ID Giảng viên");
+  if (!userId) {
+    return res.status(400).json({ message: "Không thể xác định giảng viên, vui lòng đăng nhập lại." });
+  }
+
+  try {
+    // Lấy ID giảng viên từ bảng GIANGVIEN dựa trên MaTK
+    const resultGV = await pool
+      .request()
+      .input("userId", sql.Int, userId)
+      .query("SELECT ID FROM GIANGVIEN WHERE MaTK = @userId");
+
+    if (!resultGV.recordset.length) {
+      return res.status(404).json({ message: "Giảng viên không tìm thấy" });
+    }
+    const maGV = resultGV.recordset[0].ID;
+
+    // Lấy MaMH từ tên môn học
+    const checkMonHoc = await pool
+      .request()
+      .input("MaMH", sql.Int, maMH)
+      .query("SELECT * FROM MONHOC WHERE ID = @MaMH");
+
+    if (!checkMonHoc.recordset.length) {
+      return res.status(400).json({ message: "Môn học không hợp lệ" });
+    }
+
+    // 1. Thêm lớp học phần vào bảng LOPHOCPHAN và lấy ID vừa tạo
+    const insertLHP = await pool
+      .request()
+      .input("TenLHP", sql.NVarChar(255), tenLHP)
+      .input("HocKy", sql.SmallInt, hocKy)
+      .input("NamHoc", sql.Int, namHoc)
+      .input("MaGV", sql.Int, maGV)
+      .input("MaMH", sql.Int, maMH)
+      .input("TrangThai", sql.SmallInt, trangThai || 1)
+      .query(`
+        INSERT INTO LOPHOCPHAN (TenLHP, HocKy, NamHoc, MaGV, MaMH, TrangThai)
+        OUTPUT Inserted.ID
+        VALUES (@TenLHP, @HocKy, @NamHoc, @MaGV, @MaMH, @TrangThai)
+      `);
+
+    const newLHPId = insertLHP.recordset[0].ID;
+
+    // 2. Mapping vào GIANGVIEN_LHP
+    await pool.request()
+      .input("MaGV", sql.Int, maGV)
+      .input("MaLHP", sql.Int, newLHPId)
+      .input("TrangThai", sql.SmallInt, 1)
+      .query(`
+        INSERT INTO GIANGVIEN_LHP (MaGV, MaLHP, TrangThai)
+        VALUES (@MaGV, @MaLHP, @TrangThai)
+      `);
+
+    res.status(201).json({ message: "Lớp học phần đã được tạo." });
+  } catch (error) {
+    console.error("Lỗi khi thêm lớp học phần:", error);
+    res.status(500).json({ message: "Không thể thêm lớp học phần." });
+  }
+};
+
+
+// api/lophocphan/:maLHP/giangvien
+exports.getGiangViensOfLHP = async (req, res) => {
+  const maLHP = req.params.maLHP || req.query.maLHP;
+  try {
+    const result = await pool.request()
+      .input("MaLHP", sql.Int, maLHP)
+      .query(`
+        SELECT gv.ID AS maGV, gv.HoGV + ' ' + gv.TenGV AS tenGV, us.Email, us.HoTen, us.ID AS userId
+        FROM GIANGVIEN_LHP glhp
+        JOIN GIANGVIEN gv ON glhp.MaGV = gv.ID
+        JOIN USERS us ON gv.MaTK = us.ID
+        WHERE glhp.MaLHP = @MaLHP
+      `);
+
+    res.json(result.recordset); // [{maGV, tenGV, ...}]
+  } catch (err) {
+    console.error("Lỗi lấy giảng viên:", err);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+// api/lophocphan/:maLHP/sinhvien
+exports.getSinhViensOfLHP = async (req, res) => {
+  const maLHP = req.params.maLHP || req.query.maLHP;
+  try {
+    const result = await pool.request()
+      .input("MaLHP", sql.Int, maLHP)
+      .query(`
+        SELECT sv.ID AS maSV, sv.HoTen AS tenSV, us.Email, us.HoTen, us.ID AS userId
+        FROM SINHVIEN_LHP slhp
+        JOIN SINHVIEN sv ON slhp.MaSV = sv.ID
+        JOIN USERS us ON sv.MaTK = us.ID
+        WHERE slhp.MaLHP = @MaLHP
+      `);
+
+    res.json(result.recordset); // [{maSV, tenSV, ...}]
+  } catch (err) {
+    console.error("Lỗi lấy sinh viên:", err);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+
+
+// api/lophocphan/thanhphan?maLHP=xx
+exports.getThanhPhanLopHocPhan = async (req, res) => {
+  const maLHP = req.query.maLHP;
+  try {
+    // Lấy giảng viên
+    const gvRes = await pool.request()
+      .input("MaLHP", sql.Int, maLHP)
+      .query(`
+        SELECT gv.ID AS maGV, gv.HoGV + ' ' + gv.TenGV AS tenGV, us.Email, us.HoTen, us.ID AS userId
+        FROM GIANGVIEN_LHP glhp
+        JOIN GIANGVIEN gv ON glhp.MaGV = gv.ID
+        JOIN USERS us ON gv.MaTK = us.ID
+        WHERE glhp.MaLHP = @MaLHP
+      `);
+    // Lấy sinh viên
+    const svRes = await pool.request()
+      .input("MaLHP", sql.Int, maLHP)
+      .query(`
+        SELECT sv.ID AS maSV, sv.HoTen AS tenSV, us.Email, us.HoTen, us.ID AS userId
+        FROM SINHVIEN_LHP slhp
+        JOIN SINHVIEN sv ON slhp.MaSV = sv.ID
+        JOIN USERS us ON sv.MaTK = us.ID
+        WHERE slhp.MaLHP = @MaLHP
+      `);
+
+    res.json({
+      giangViens: gvRes.recordset,
+      sinhViens: svRes.recordset,
+    });
+  } catch (err) {
+    console.error("Lỗi lấy thành phần lớp học phần:", err);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
