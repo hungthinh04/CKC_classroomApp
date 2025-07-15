@@ -1,6 +1,7 @@
 const { BASE_URL } = require("../../constants/Link");
 // import { BASE_URL } from '@/constants/Link';
 const { pool, sql } = require("../config/db");
+const upload = require("../utils/multer");
 
 exports.getBaiVietByLHP = async (req, res) => {
   const maLHP = parseInt(req.params.id);
@@ -32,6 +33,7 @@ exports.getBaiVietByLHP = async (req, res) => {
 
 exports.createBaiViet = async (req, res) => {
   const { TieuDe, NoiDung, LoaiBV, MaLHP, HanNop } = req.body;
+  console.log(req.body,"✅ Dữ liệu tạo bài viết");
   try {
     const result = await pool
       .request()
@@ -451,4 +453,36 @@ exports.getBaiTapCanLam = async (req, res) => {
     console.error("❌ Lỗi khi lấy bài tập cần làm:", err);
     res.status(500).json({ message: "Lỗi khi lấy danh sách bài tập" });
   }
+};
+
+
+exports.updateBaiNop = upload.single('file'),async (req, res) => {
+  const { id } = req.params; // Lấy ID bài nộp từ tham số URL
+  const { VanBan } = req.body; // Lấy dữ liệu nhận xét và tệp (nếu có)
+  const file = req.file; // Lấy tệp đã tải lên từ `req.file`
+
+  try {
+    // Tìm bài nộp bằng ID
+    let baiNop = await BaiNop.findOne({ where: { ID: id } });
+
+    if (!baiNop) {
+      return res.status(404).json({ message: 'Bài nộp không tìm thấy' });
+    }
+
+    // Cập nhật thông tin bài nộp
+    baiNop.VanBan = VanBan || baiNop.VanBan; // Cập nhật nhận xét nếu có
+    if (file) {
+      baiNop.FileDinhKem = file.path; // Cập nhật file nếu có
+    }
+
+    // Lưu bài nộp đã cập nhật
+    await baiNop.save();
+
+    // Trả về kết quả
+    res.status(200).json(baiNop);
+  } catch (error) {
+    console.error("Lỗi khi cập nhật bài nộp:", error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+  
 };

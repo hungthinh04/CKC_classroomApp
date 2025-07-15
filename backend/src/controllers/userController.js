@@ -71,3 +71,22 @@ try {
 }
 
 };
+
+
+exports.getMaSV = async (req, res) => {
+  const  userId  = req.user.id;
+  console.log(userId, "userId from");
+  try {
+    const result = await pool.request()
+  .input('MaTK', sql.Int, userId)
+  .query(`SELECT MaSinhVien FROM SINHVIEN WHERE MaTK = @MaTK`);
+
+const maSV = result.recordset[0].MaSinhVien;
+    if (!maSV) return res.status(404).json({ message: 'Không tìm thấy sinh viên' });
+
+    res.json(maSV);
+  } catch (err) {
+    console.error("❌ Lỗi khi MaSV: ", err);
+    res.status(500).json({ message: "Lỗi server khi lấy MaSV" });
+  }
+};

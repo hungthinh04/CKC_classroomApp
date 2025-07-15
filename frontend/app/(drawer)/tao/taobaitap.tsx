@@ -111,7 +111,7 @@ function BaseForm({
           "Content-Type": "multipart/form-data",
         },
       });
-
+console.log(res.data.fileUrl, "✅ Đã gửi bài thành công");
       if (res.status === 201) {
         const fileUrl = res.data.fileUrl
           ? `${BASE_URL}${res.data.fileUrl}`

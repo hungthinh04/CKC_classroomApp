@@ -136,7 +136,7 @@ export default function BaiTapScreen() {
 
             {/* Preview file đính kèm */}
             {item.duongDanFile && (
-              <TouchableOpacity onPress={() => Linking.openURL(`${BASE_URL}${item.duongDanFile}`)} style={styles.attachBtn}>
+              <TouchableOpacity onPress={() => Linking.openURL(`${item.duongDanFile}`)} style={styles.attachBtn}>
                 <Ionicons name="attach" size={18} color="#b191ff" />
                 <Text style={styles.attachText}>Xem file đính kèm</Text>
               </TouchableOpacity>

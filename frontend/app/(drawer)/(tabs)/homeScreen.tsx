@@ -59,7 +59,6 @@ export default function HomeScreen() {
     await logout();
     router.replace("/(auth)/login");
   };
-
   const fetchLHP = async () => {
     try {
       if (!user?.id) return;

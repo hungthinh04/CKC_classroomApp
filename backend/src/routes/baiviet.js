@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { getBaiVietByLopHocPhan } = require("../controllers/baivietController");
+// const { getBaiVietByLopHocPhan } = require("../controllers/baivietController");
 const { createBaiViet } = require("../controllers/baivietController");
 const auth = require("../middleware/auth");
 const controller = require("../controllers/baivietController");
@@ -41,6 +41,6 @@ router.get("/:id/comments", controllerComment.getCommentsByPostId);
 // Gửi comment mới (phải đăng nhập)
 router.post("/:id/comment", verifyToken, controllerComment.postComment);
 router.get('/canlam/:maSV', controller.getBaiTapCanLam);
-
+router.put('/capnhat/:id', auth, controller.updateBaiNop);
 // router.get('/me/role', auth, controller.getMyRole);
 module.exports = router;
