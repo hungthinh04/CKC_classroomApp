@@ -5,7 +5,7 @@ const authProvider = {
   login: async ({ username, password }) => {
     try {
       // Gửi yêu cầu login đến API backend
-      const response = await axios.post("http://localhost:3000/api/login", {
+      const response = await axios.post("https://ckc-classroomappp.onrender.com/api/login", {
         email: username,
         matkhau: password,
       });

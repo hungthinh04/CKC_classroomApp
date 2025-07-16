@@ -26,7 +26,7 @@ import {
 import './css/styles.css'; // Import custom styles
 import { PhanCongGiangVienCreate, PhanCongGiangVienEdit, PhanCongGiangVienList } from "./resources/PhanCongGV";
 import { PhanCongSinhVienCreate, PhanCongSinhVienEdit, PhanCongSinhVienList } from "./resources/PhanCongSV";
-const dataProvider = simpleRestProvider("http://localhost:3000/admin");
+const dataProvider = simpleRestProvider("https://ckc-classroomappp.onrender.com/admin");
 
 function App() {
   return (
