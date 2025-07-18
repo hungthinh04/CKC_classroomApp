@@ -33,9 +33,9 @@ export const UserList = () => (
       <FunctionField
         label="Trạng Thái"
         render={record =>
-          record.trangThai === 1 ? "Đang Học" :
-          record.trangThai === 2 ? "Đã Tốt Nghiệp" :
-          "Bị Đình Chỉ"
+          record.trangThai === 1 ? "Đang hoạt động" :
+          record.trangThai === 2 ? "Đã tốt nghiệp / Đã nghỉ" :
+          "Bị tạm dừng"
         }
       />
       <EditButton />
@@ -63,9 +63,9 @@ export const UserEdit = () => (
         source="trangThai"
         label="Trạng Thái"
         choices={[
-          { id: 1, name: "Đang Hoạt động" },
-          { id: 2, name: "Đã Tốt Nghiệp" },
-          { id: 0, name: "Bị Đình Chỉ" },
+          { id: 1, name: "Đang hoạt động" },
+          { id: 2, name: "Đã tốt nghiệp / Đã nghỉ" },
+          { id: 0, name: "Bị tạm dừng" },
         ]}
       />
     </SimpleForm>
