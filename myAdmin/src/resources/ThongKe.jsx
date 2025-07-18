@@ -18,7 +18,7 @@ export const ThongKeList = () => {
   const refresh = useRefresh();
 
   useEffect(() => {
-    fetch("http://localhost:3000/admin/thongke")
+    fetch("https://ckc-classroomapp.onrender.com/admin/thongke")
       .then((response) => response.json())
       .then((res) => {
         const data = [
