@@ -5,11 +5,10 @@ const upload = require("../utils/multer");
 
 exports.getBaiVietByLHP = async (req, res) => {
   const maLHP = parseInt(req.params.id);
-  if (!maLHP) return res.status(400).json({ message: "Mã lớp học phần không hợp lệ" });
+  if (!maLHP)
+    return res.status(400).json({ message: "Mã lớp học phần không hợp lệ" });
   try {
-    const result = await pool.request()
-      .input("MaLHP", sql.Int, maLHP)
-      .query(`
+    const result = await pool.request().input("MaLHP", sql.Int, maLHP).query(`
         SELECT 
           bv.ID, bv.TieuDe, bv.NgayTao, bv.NoiDung, bv.LoaiBV, 
           bv.MaBaiViet, bv.TrangThai, 
@@ -30,6 +29,7 @@ exports.getBaiVietByLHP = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi lấy bài viết" });
   }
 };
+
 
 exports.createBaiViet = async (req, res) => {
   const { TieuDe, NoiDung, LoaiBV, MaLHP, HanNop } = req.body;
@@ -76,14 +76,131 @@ exports.createBaiViet = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi tạo bài viết" });
   }
 };
+
+exports.getDanhSachBaiNopByBaiViet = async (req, res) => {
+  const { maBaiViet } = req.params; // Nhận mã bài viết từ params
+  if (!maBaiViet) {
+    return res.status(400).json({ message: "Thiếu mã bài viết" });
+  }
+  
+  try {
+    const result = await pool
+      .request()
+      .input("MaBaiViet", sql.Int, maBaiViet) // Truyền MaBaiViet vào SQL
+      .query(`
+        SELECT 
+          nb.ID,
+          nb.MaSV,
+          sv.HoTen,
+          nb.NgayNop,
+          nb.Diem,
+          nb.VanBan,
+          nb.FileDinhKem
+        FROM NOPBAI nb
+        JOIN SINHVIEN sv ON nb.MaSV = sv.ID
+        WHERE nb.MaBaiViet = @MaBaiViet
+        ORDER BY nb.NgayNop DESC
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy bài nộp" });
+    }
+    
+    res.json(result.recordset); // Trả về danh sách bài nộp
+  } catch (err) {
+    console.error("Lỗi khi lấy danh sách bài nộp:", err);
+    res.status(500).json({ message: "Lỗi khi lấy danh sách bài nộp" });
+  }
+};
+
+
+
+// exports.createBaiViet = async (req, res) => {
+//   const { TieuDe, NoiDung, LoaiBV, MaLHP, HanNop } = req.body;
+//   console.log(req.body, "✅ Dữ liệu tạo bài viết");
+//   try {
+//     // Bước 1: Tạo bài viết trước, lấy ra ID
+//     const result = await pool
+//       .request()
+//       .input("TieuDe", sql.NVarChar, TieuDe)
+//       .input("NoiDung", sql.NVarChar, NoiDung)
+//       .input("LoaiBV", sql.SmallInt, LoaiBV)
+//       .input("MaLHP", sql.Int, MaLHP)
+//       .input("MaTK", sql.Int, req.user.id)
+//       .input("HanNop", sql.DateTime, HanNop || null)
+//       .input("TrangThai", sql.SmallInt, 1)
+//       .query(`
+//         INSERT INTO BAIVIET (TieuDe, NoiDung, LoaiBV, MaLHP, MaTK, HanNop, TrangThai)
+//         VALUES (@TieuDe, @NoiDung, @LoaiBV, @MaLHP, @MaTK, @HanNop, @TrangThai);
+//         SELECT SCOPE_IDENTITY() AS ID;
+//       `);
+
+//     const baiVietId = result.recordset[0].ID;
+
+//     // Bước 2: Nếu có file, lưu từng file vào bảng FILE
+//     // req.files sẽ có dạng { anh: [fileObj], tep: [fileObj] }
+//     const files = req.files || {};
+//     console.log("req.files:", JSON.stringify(req.files, null, 2));
+
+//     let fileInfos = [];
+// console.log("req.files:", JSON.stringify(req.files, null, 2));
+
+//     // Lưu file ảnh nếu có
+//     if (files.anh && files.anh.length > 0) {
+//       const file = files.anh[0];
+//       const fileUrl = file.path || file.secure_url;
+//       await pool.request()
+//         .input("TenFile", sql.NVarChar, file.originalname)
+//         .input("DuongDan", sql.NVarChar, fileUrl)
+//         .input("LoaiFile", sql.NVarChar, file.mimetype)
+//         .input("DungLuong", sql.Float, file.size)
+//         .input("TrangThai", sql.SmallInt, 1)
+//         .input("MaBaiViet", sql.Int, baiVietId)
+//         .query(`
+//           INSERT INTO [FILE] (TenFile, DuongDan, LoaiFile, DungLuong, TrangThai, MaBaiViet)
+//           VALUES (@TenFile, @DuongDan, @LoaiFile, @DungLuong, @TrangThai, @MaBaiViet)
+//         `);
+//       fileInfos.push({ type: "anh", url: fileUrl });
+//     }
+
+//     // Lưu file tài liệu nếu có
+//     if (files.tep && files.tep.length > 0) {
+//       const file = files.tep[0];
+      
+//       const fileUrl = file.path || file.secure_url;
+//       await pool.request()
+//         .input("TenFile", sql.NVarChar, file.originalname)
+//         .input("DuongDan", sql.NVarChar, fileUrl)
+//         .input("LoaiFile", sql.NVarChar, file.mimetype)
+//         .input("DungLuong", sql.Float, file.size)
+//         .input("TrangThai", sql.SmallInt, 1)
+//         .input("MaBaiViet", sql.Int, baiVietId)
+//         .query(`
+//           INSERT INTO [FILE] (TenFile, DuongDan, LoaiFile, DungLuong, TrangThai, MaBaiViet)
+//           VALUES (@TenFile, @DuongDan, @LoaiFile, @DungLuong, @TrangThai, @MaBaiViet)
+//         `);
+//       fileInfos.push({ type: "tep", url: fileUrl });
+//     }
+
+//     // Trả về kết quả
+//     res.status(201).json({
+//       message: "Tạo bài viết thành công",
+//       baiVietId,
+//       files: fileInfos
+//     });
+//   } catch (err) {
+//     console.error("Lỗi tạo bài viết:", err);
+//     res.status(500).json({ message: "Lỗi khi tạo bài viết" });
+//   }
+// };
+
 exports.getDanhSachBaiNopByBaiViet = async (req, res) => {
   const { maBaiViet } = req.params;
   if (!maBaiViet) {
     return res.status(400).json({ message: "Thiếu mã bài viết" });
   }
   try {
-    const result = await pool.request()
-      .input("MaBaiViet", sql.Int, maBaiViet)
+    const result = await pool.request().input("MaBaiViet", sql.Int, maBaiViet)
       .query(`
         SELECT
           nb.ID,
@@ -189,6 +306,61 @@ exports.getBaiVietTheoLoai = async (req, res) => {
 //     res.status(500).json({ message: "Lỗi tạo bài viết" });
 //   }
 // };
+// Xóa bài tập (bài viết) theo ID
+exports.deleteBaiTap = async (req, res) => {
+  const { id } = req.params; // Nhận ID của bài viết từ URL params
+
+  // Kiểm tra ID hợp lệ
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ message: "ID bài tập không hợp lệ" });
+  }
+
+  try {
+    // Kiểm tra loại bài viết
+    const result = await pool
+      .request()
+      .input("ID", sql.Int, parseInt(id)) // Chuyển ID thành số trước khi truyền vào SQL
+      .query(`
+        SELECT LoaiBV, IsDeleted
+        FROM BAIVIET 
+        WHERE ID = @ID
+      `);
+
+    const baiViet = result.recordset[0];
+
+    // Kiểm tra bài viết có tồn tại và chưa bị xóa
+    if (!baiViet || baiViet.IsDeleted === 1) {
+      return res.status(404).json({ message: "Bài tập không tồn tại hoặc đã xóa" });
+    }
+
+    // Nếu LoaiBV = 1, xóa bài viết thật sự
+    if (baiViet.LoaiBV === 1) {
+      await pool
+        .request()
+        .input("ID", sql.Int, parseInt(id)) // Chuyển ID thành số trước khi truyền vào SQL
+        .query("DELETE FROM BAIVIET WHERE ID = @ID");
+      
+      await pool
+        .request()
+        .input("ID", sql.Int, parseInt(id)) // Xóa bài nộp liên quan
+        .query("DELETE FROM NOPBAI WHERE MaBaiViet = @ID");
+        
+      res.json({ message: "Xóa bài tập thành công" });
+    } else {
+      // Nếu LoaiBV != 1, đánh dấu bài viết là đã xóa
+      await pool
+        .request()
+        .input("ID", sql.Int, parseInt(id)) // Chuyển ID thành số trước khi truyền vào SQL
+        .query("UPDATE BAIVIET SET IsDeleted = 1 WHERE ID = @ID");
+
+      res.json({ message: "Bài tập đã bị đánh dấu xóa" });
+    }
+  } catch (err) {
+    console.error("Lỗi khi xóa bài tập:", err);
+    res.status(500).json({ message: "Lỗi server khi xóa bài tập" });
+  }
+};
+
 
 exports.deleteBaiNop = async (req, res) => {
   const { id } = req.params; // Nhận ID của bài nộp từ URL params
@@ -221,7 +393,8 @@ exports.deleteBaiNop = async (req, res) => {
 // DELETE /baiviet/:id
 exports.deleteBaiNop = async (req, res) => {
   const { id } = req.params;
-  if (!id || isNaN(id)) return res.status(400).json({ message: "ID bài nộp không hợp lệ" });
+  if (!id || isNaN(id))
+    return res.status(400).json({ message: "ID bài nộp không hợp lệ" });
 
   try {
     const result = await pool
@@ -238,7 +411,6 @@ exports.deleteBaiNop = async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi xóa bài nộp" });
   }
 };
-
 
 // exports.nopBai = async (req, res) => {
 //   try {
@@ -331,28 +503,38 @@ exports.deleteBaiNop = async (req, res) => {
 //     res.status(500).json({ message: "Lỗi khi nộp bài" });
 //   }
 // };
-
 exports.nopBai = async (req, res) => {
   try {
-    const { MaBaiViet, VanBan } = req.body;
+    const { MaBaiViet, VanBan, MaLHP } = req.body;
+
+    // Kiểm tra nếu thiếu MaBaiViet, VanBan hoặc MaLHP
+    if (!MaBaiViet || !VanBan || !MaLHP) {
+      return res.status(400).json({ message: "Thiếu mã bài viết, nhận xét hoặc mã lớp học phần" });
+    }
+
     const MaTK = req.user.id;
 
-    let maLHP = req.body.MaLHP;
-    if (Array.isArray(maLHP)) maLHP = maLHP[0];
-    maLHP = parseInt(maLHP, 10);
-    console.log("MaLHP fix:", maLHP, typeof maLHP);
+    maLHP = parseInt(MaLHP, 10);
+    if (isNaN(maLHP)) {
+      return res.status(400).json({ message: "Mã lớp học phần không hợp lệ!" });
+    }
 
-    if (isNaN(maLHP)) return res.status(400).json({ message: "MaLHP không hợp lệ!" });
-
-    // Lấy mã sinh viên
+    // Lấy mã sinh viên từ cơ sở dữ liệu
     const svResult = await pool
       .request()
       .input("MaTK", sql.Int, MaTK)
       .query(`SELECT TOP 1 ID FROM SINHVIEN WHERE MaTK = @MaTK`);
-    if (svResult.recordset.length === 0)
+      
+    if (svResult.recordset.length === 0) {
       return res.status(403).json({ message: "Không tìm thấy sinh viên" });
+    }
 
     const MaSV = svResult.recordset[0].ID;
+
+    // Kiểm tra nếu thiếu MaSV
+    if (!MaSV) {
+      return res.status(400).json({ message: "Mã sinh viên không hợp lệ" });
+    }
 
     // Thêm file nếu có
     let FileDinhKem = null;
@@ -360,7 +542,9 @@ exports.nopBai = async (req, res) => {
       FileDinhKem = `/uploads/${req.file.filename}`;
     }
 
-    await pool.request()
+    // Lưu thông tin bài nộp vào cơ sở dữ liệu
+    await pool
+      .request()
       .input("MaSV", sql.Int, MaSV)
       .input("MaLHP", sql.Int, maLHP)
       .input("MaBaiViet", sql.Int, MaBaiViet)
@@ -379,11 +563,15 @@ exports.nopBai = async (req, res) => {
   }
 };
 
+
+
 exports.getBaiNopByBaiViet = async (req, res) => {
-  const { maBaiViet } = req.params;   // phải là ID bài viết
+  const { maBaiViet } = req.params; // phải là ID bài viết
   const { maSV, maLHP } = req.query;
   if (!maSV || !maLHP) {
-    return res.status(400).json({ message: "Thiếu mã sinh viên hoặc mã lớp học phần" });
+    return res
+      .status(400)
+      .json({ message: "Thiếu mã sinh viên hoặc mã lớp học phần" });
   }
 
   try {
@@ -391,8 +579,7 @@ exports.getBaiNopByBaiViet = async (req, res) => {
       .request()
       .input("MaBaiViet", sql.Int, maBaiViet)
       .input("MaSV", sql.Int, maSV)
-      .input("MaLHP", sql.Int, maLHP)
-      .query(`
+      .input("MaLHP", sql.Int, maLHP).query(`
         SELECT 
             NOP.ID,
             NOP.MaSV,
@@ -412,10 +599,6 @@ exports.getBaiNopByBaiViet = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi lấy bài nộp" });
   }
 };
-
-
-
-
 
 // GET /baiviet/id/:
 exports.getBaiVietById = async (req, res) => {
@@ -455,8 +638,6 @@ exports.getBaiVietById = async (req, res) => {
   }
 };
 
-
-
 exports.getBaiTapCanLam = async (req, res) => {
   const { maSV } = req.params; // Mã sinh viên (hoặc lấy từ token nếu đã login)
 
@@ -483,34 +664,32 @@ exports.getBaiTapCanLam = async (req, res) => {
   }
 };
 
-
-exports.updateBaiNop = upload.single('file'),async (req, res) => {
+exports.updateBaiNop = async (req, res) => {
   const { id } = req.params; // Lấy ID bài nộp từ tham số URL
   const { VanBan } = req.body; // Lấy dữ liệu nhận xét và tệp (nếu có)
   const file = req.file; // Lấy tệp đã tải lên từ `req.file`
 
-  try {
-    // Tìm bài nộp bằng ID
-    let baiNop = await BaiNop.findOne({ where: { ID: id } });
+    try {
+      // Tìm bài nộp bằng ID
+      let baiNop = await BaiNop.findOne({ where: { ID: id } });
 
-    if (!baiNop) {
-      return res.status(404).json({ message: 'Bài nộp không tìm thấy' });
+      if (!baiNop) {
+        return res.status(404).json({ message: "Bài nộp không tìm thấy" });
+      }
+
+      // Cập nhật thông tin bài nộp
+      baiNop.VanBan = VanBan || baiNop.VanBan; // Cập nhật nhận xét nếu có
+      if (file) {
+        baiNop.FileDinhKem = file.path; // Cập nhật file nếu có
+      }
+
+      // Lưu bài nộp đã cập nhật
+      await baiNop.save();
+
+      // Trả về kết quả
+      res.status(200).json(baiNop);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật bài nộp:", error);
+      res.status(500).json({ message: "Lỗi server" });
     }
-
-    // Cập nhật thông tin bài nộp
-    baiNop.VanBan = VanBan || baiNop.VanBan; // Cập nhật nhận xét nếu có
-    if (file) {
-      baiNop.FileDinhKem = file.path; // Cập nhật file nếu có
-    }
-
-    // Lưu bài nộp đã cập nhật
-    await baiNop.save();
-
-    // Trả về kết quả
-    res.status(200).json(baiNop);
-  } catch (error) {
-    console.error("Lỗi khi cập nhật bài nộp:", error);
-    res.status(500).json({ message: 'Lỗi server' });
-  }
-  
-};
+  };

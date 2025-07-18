@@ -25,6 +25,7 @@ type LopHocPhan = {
   tenGV?: string;
   tenMH?: string;
   maLop?: string;
+  TrangThai?: number; // Thêm trường này!
 };
 
 export default function HomeScreen() {
@@ -59,6 +60,7 @@ export default function HomeScreen() {
     await logout();
     router.replace("/(auth)/login");
   };
+
   const fetchLHP = async () => {
     try {
       if (!user?.id) return;
@@ -92,6 +94,7 @@ export default function HomeScreen() {
               tenGV: item.TenGV || "",
               tenMH: item.TenMH || "",
               maLop: item.MaLop || "",
+              TrangThai: item.TrangThai ?? 0, // <-- lấy từ API về
             }))
           : []
       );
@@ -128,9 +131,8 @@ export default function HomeScreen() {
   };
 
   const handleEditLHP = (id: number) => {
-router.push(`/tao/edit/${id}?maLHP=abc&loaiBV=1`);
-
-};
+    router.push(`/tao/edit/${id}?maLHP=abc&loaiBV=1`);
+  };
 
   const handleCardMenu = (cls: LopHocPhan) => {
     Alert.alert(
@@ -140,6 +142,10 @@ router.push(`/tao/edit/${id}?maLHP=abc&loaiBV=1`);
         {
           text: "Chỉnh sửa",
           onPress: () => handleEditLHP(cls.id),
+        },
+        {
+          text: cls.TrangThai === 1 ? "Bỏ lưu trữ" : "Lưu trữ", // toggle text
+          onPress: () => handleToggleLuuTru(cls),
         },
         {
           text: "Huỷ",
@@ -155,6 +161,70 @@ router.push(`/tao/edit/${id}?maLHP=abc&loaiBV=1`);
   };
 
   const isGV = user?.role === 1;
+  const isSinhVien = user?.role === 0;
+
+  // Hàm xử lý lưu trữ/bỏ lưu trữ:
+  const handleToggleLuuTru = async (cls: LopHocPhan) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const res = await fetch(
+        `${BASE_URL}/lophocphan/${cls.id}/luutru`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            value: cls.TrangThai === 1 ? 0 : 1,
+          }),
+        }
+      );
+      const result = await res.json();
+      if (result.success) {
+        Alert.alert(
+          "Thành công",
+          cls.TrangThai === 1
+            ? "Đã bỏ lưu trữ lớp học phần!"
+            : "Đã lưu trữ lớp học phần!"
+        );
+        fetchLHP();
+      } else {
+        Alert.alert("Lỗi", result.message || "Không thực hiện được.");
+      }
+    } catch (err) {
+      Alert.alert("Lỗi", "Không thể cập nhật lưu trữ.");
+    }
+  };
+const handleAddStudentToLHP = async (lophocphanId) => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+
+    const res = await fetch(`${BASE_URL}/api/sinhvien/lophocphan/add`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        studentId: user.id,
+        lophocphanId: lophocphanId,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      Alert.alert("Thành công", data.message);
+      fetchLHP(); // Làm mới danh sách lớp học phần
+    } else {
+      Alert.alert("Lỗi", data.message || "Không thể thêm sinh viên vào lớp học phần.");
+    }
+  } catch (error) {
+    console.error("Add Student to LHP error:", error);
+    Alert.alert("Lỗi", "Không thể thêm sinh viên vào lớp học phần.");
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -247,7 +317,7 @@ router.push(`/tao/edit/${id}?maLHP=abc&loaiBV=1`);
                   <Text style={styles.subject}>{cls.tenGV}</Text>
                 </View>
               </TouchableOpacity>
-              {/* Nút 3 chấm, render nằm ngoài card */}
+              {/* Nút 3 chấm trong menu */}
               <TouchableOpacity
                 style={styles.cardMenu}
                 onPress={() => handleCardMenu(cls)}
@@ -269,10 +339,19 @@ router.push(`/tao/edit/${id}?maLHP=abc&loaiBV=1`);
           <Ionicons name="add" size={34} color="#fff" />
         </TouchableOpacity>
       )}
+
+      {/* {isSinhVien && (
+  <TouchableOpacity
+    style={styles.addButton}
+    onPress={() => router.push("/tao/addSVLHP")}  // Thêm sinh viên vào lớp học phần
+    activeOpacity={0.82}
+  >
+    <Ionicons name="add" size={34} color="#fff" />
+  </TouchableOpacity>
+)} */}
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

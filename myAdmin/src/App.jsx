@@ -23,11 +23,21 @@ import {
   LopHocPhanEdit,
   LopHocPhanList,
 } from "./resources/LopHocPhan";
-import './css/styles.css'; // Import custom styles
-import { PhanCongGiangVienCreate, PhanCongGiangVienEdit, PhanCongGiangVienList } from "./resources/PhanCongGV";
-import { PhanCongSinhVienCreate, PhanCongSinhVienEdit, PhanCongSinhVienList } from "./resources/PhanCongSV";
+import "./css/styles.css"; // Import custom styles
+import {
+  PhanCongGiangVienCreate,
+  PhanCongGiangVienEdit,
+  PhanCongGiangVienList,
+} from "./resources/PhanCongGV";
+import {
+  PhanCongSinhVienCreate,
+  PhanCongSinhVienEdit,
+  PhanCongSinhVienList,
+} from "./resources/PhanCongSV";
 import { BaiVietEdit, BaiVietList } from "./resources/BaiViet";
-const dataProvider = simpleRestProvider("https://ckc-classroomappp.onrender.com/admin");
+import { ThongKeList } from "./resources/ThongKe";
+// import ThongKe from "./resources/ThongKe";
+const dataProvider = simpleRestProvider("http://localhost:3000/admin");
 
 function App() {
   return (
@@ -82,19 +92,19 @@ function App() {
       />
 
       <Resource
-  name="giangvien_lhp"
-  options={{ label: "Phân Công GV" }}
-  list={PhanCongGiangVienList}
-  create={PhanCongGiangVienCreate}
-  edit={PhanCongGiangVienEdit}
-/>
-<Resource
-  name="sinhvien_lhp"
-  options={{ label: "Phân Công SV" }}
-  list={PhanCongSinhVienList}
-  create={PhanCongSinhVienCreate}
-  edit={PhanCongSinhVienEdit}
-/>
+        name="giangvien_lhp"
+        options={{ label: "Phân Công GV" }}
+        list={PhanCongGiangVienList}
+        create={PhanCongGiangVienCreate}
+        edit={PhanCongGiangVienEdit}
+      />
+      <Resource
+        name="sinhvien_lhp"
+        options={{ label: "Phân Công SV" }}
+        list={PhanCongSinhVienList}
+        create={PhanCongSinhVienCreate}
+        edit={PhanCongSinhVienEdit}
+      />
       <Resource
         name="lophocphan"
         options={{ label: "Lớp Học Phần" }}
@@ -103,7 +113,18 @@ function App() {
         edit={LopHocPhanEdit}
       />
 
-      <Resource name="baiviet" options={{ label: "Bài Viết" }} list={BaiVietList}  edit={BaiVietEdit} />
+      <Resource
+        name="baiviet"
+        options={{ label: "Bài Viết" }}
+        list={BaiVietList}
+        edit={BaiVietEdit}
+      />
+
+     <Resource
+        name="thongke"
+        options={{ label: "Thống Kê" }}
+        list={ThongKeList} // Thêm Thống Kê vào đây
+      />
     </Admin>
   );
 }

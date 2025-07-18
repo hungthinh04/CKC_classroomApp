@@ -93,7 +93,7 @@ JOIN LOPHOCPHAN lhp ON gvlhp.MaLHP = lhp.ID
 LEFT JOIN GIANGVIEN gv ON lhp.MaGV = gv.ID
 LEFT JOIN MONHOC mh ON lhp.MaMH = mh.ID
 LEFT JOIN LOPHOC lh ON lhp.MaLH = lh.ID  -- Đổi JOIN này thành LEFT JOIN
-WHERE gvlhp.MaGV = @MaGV
+WHERE gvlhp.MaGV = @MaGV AND lhp.TrangThai = 1
 
       `);
 
@@ -241,3 +241,25 @@ exports.getMaGV = async (req, res) => {
     res.status(500).json({ message: "Không thể lấy MaGV" });
   }
 };
+
+// controllers/lophocphanController.js
+
+exports.getLhpLuuTru = async (req, res) => {
+  const userId = req.user.id;  // lấy userId từ JWT hoặc params (tuỳ thuộc vào cách bạn xác thực)
+console.log(userId, "User ID Giảng viên");
+  try {
+    // Truy vấn lấy các lớp học phần có trạng thái "TrangThai = 0"
+    const result = await pool.request()
+      .input("UserId", sql.Int, userId)
+      .query(`
+        SELECT * FROM LOPHOCPHAN
+        WHERE MaGV = @UserId AND TrangThai = 0
+      `);
+console.log(result.recordset, "LHP đã lưu trữ");
+    res.json(result.recordset);  // trả về danh sách lớp học phần đã lưu trữ
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi khi lấy lớp học phần đã lưu trữ", error });
+  }
+};
+
+

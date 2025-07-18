@@ -452,3 +452,51 @@ exports.getThanhPhanLopHocPhan = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+exports.luuTruLop = async (req, res) => {
+  const { id } = req.params;
+  console.log(id," ID lớp học phần để lưu trữ");
+  try {
+      await pool.request()
+      .input("ID", sql.Int, id)
+      .query("UPDATE LOPHOCPHAN SET TrangThai = 0 WHERE ID = @ID");
+
+    res.json({ success: true, message: "Đã bỏ lưu trữ lớp học phần!" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi cập nhật!", error });
+  }
+};
+
+
+exports.removeLuuTru = async (req, res) => {
+  const { id } = req.params;  // Lấy ID lớp học phần từ params
+  try {
+    // Cập nhật trạng thái của lớp học phần thành 1 (bỏ lưu trữ)
+    await pool.request()
+      .input("ID", sql.Int, id)
+      .query("UPDATE LOPHOCPHAN SET TrangThai = 1 WHERE ID = @ID");
+
+    res.json({ success: true, message: "Đã bỏ lưu trữ lớp học phần!" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi cập nhật!", error });
+  }
+};
+
+
+exports.getLhpLuuTru = async (req, res) => {
+  const userId = req.user.id;  // lấy userId từ JWT hoặc params (tuỳ thuộc vào cách bạn xác thực)
+console.log(userId, "User ID Giảng viên");
+  try {
+    // Truy vấn lấy các lớp học phần có trạng thái "TrangThai = 0"
+    const result = await pool.request()
+      .input("UserId", sql.Int, userId)
+      .query(`
+        SELECT * FROM LOPHOCPHAN
+        WHERE MaGV = @UserId AND TrangThai = 0
+      `);
+console.log(result.recordset, "LHP đã lưu trữ");
+    res.json(result.recordset);  // trả về danh sách lớp học phần đã lưu trữ
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi khi lấy lớp học phần đã lưu trữ", error });
+  }
+};

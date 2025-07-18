@@ -32,14 +32,14 @@ export const BaiVietList = () => (
             : record.LoaiBV === 1 ? "Bài tập"
             : ""}
       />
-      <ReferenceField source="MaTK" reference="users" label="Người đăng">
+      {/* <ReferenceField source="MaTK" reference="users" label="Người đăng">
         <TextField source="HoTen" />
-      </ReferenceField>
-      <ReferenceField source="MaLHP" reference="lophocphan" label="Lớp học phần">
+      </ReferenceField> */}
+      <ReferenceField source="MaLHP" reference="lophocphan" label="Lớp học phần" link={false}>
         <TextField source="TenLHP" />
       </ReferenceField>
       <DateField source="NgayTao" label="Ngày tạo" showTime />
-      <DateField source="HanNop" label="Hạn nộp" showTime />
+      {/* <DateField source="HanNop" label="Hạn nộp" showTime /> */}
       {/* Sửa ở đây: dùng FunctionField */}
       <FunctionField
         source="TrangThai"
@@ -85,21 +85,21 @@ export const BaiVietList = () => (
 export const BaiVietEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="TieuDe" label="Tiêu đề" />
-      <TextInput source="NoiDung" label="Nội dung" multiline />
-      <SelectInput source="LoaiBV" label="Loại bài" choices={[
+      <TextInput source="tieuDe" label="Tiêu đề" />
+      <TextInput source="noiDung" label="Nội dung" multiline />
+      <SelectInput source="loaiBV" label="Loại bài" choices={[
         { id: 1, name: "Thông báo" },
         { id: 2, name: "Bài tập" }
       ]} />
-      <ReferenceInput source="MaTK" reference="users" label="Người đăng">
+      {/* <ReferenceInput source="MaTK" reference="users" label="Người đăng">
         <AutocompleteInput optionText="hoTen" label="Tên người đăng" />
-      </ReferenceInput>
-      <ReferenceInput source="MaLHP" reference="lophocphan" label="Lớp học phần">
+      </ReferenceInput> */}
+      <ReferenceInput source="maLHP" reference="lophocphan" label="Lớp học phần">
         <AutocompleteInput optionText="TenLHP" label="Tên lớp học phần"  />
       </ReferenceInput>
-      <DateInput source="NgayTao" label="Ngày tạo" />
-      <DateInput source="HanNop" label="Hạn nộp" />
-      <SelectInput source="TrangThai" label="Trạng thái" choices={[
+      <DateInput source="ngayTao" label="Ngày tạo" />
+      {/* <DateInput source="HanNop" label="Hạn nộp" /> */}
+      <SelectInput source="trangThai" label="Trạng thái" choices={[
         { id: 1, name: "Hiện" },
         { id: 0, name: "Ẩn" }
       ]} />

@@ -243,7 +243,7 @@ export default function BaiVietDetail() {
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.commentUser}>{item.HoTen}</Text>
+                <Text style={styles.commentUser}>{item.TenNguoiDung}</Text>
                 <Text style={styles.commentMeta}>
                   {new Date(item.NgayTao).toLocaleString("vi-VN")}
                 </Text>

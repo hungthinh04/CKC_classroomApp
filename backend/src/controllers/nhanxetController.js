@@ -1,6 +1,5 @@
 const { pool, sql } = require("../config/db");
 
-// GET /baiviet/:id/comments
 exports.getCommentsByPostId = async (req, res) => {
   const { id } = req.params;
   try {
@@ -21,10 +20,20 @@ exports.getCommentsByPostId = async (req, res) => {
         WHERE n.MaBV = @MaBV
         ORDER BY n.NgayTao DESC
       `);
+    
+    if (!result.recordset.length) {
+      // Nếu không có bình luận, trả về thông báo
+      return res.status(404).json({ message: "Không có bình luận nào." });
+    }
+
+    // Nếu thành công, trả về danh sách bình luận
     res.json(result.recordset);
   } catch (err) {
     console.error("❌ Lỗi khi lấy nhận xét:", err);
-    res.status(500).json({ message: "Lỗi khi lấy nhận xét" });
+    // Nếu có lỗi, đảm bảo trả về một lần và chỉ một lần
+    if (!res.headersSent) {
+      return res.status(500).json({ message: "Lỗi khi lấy nhận xét" });
+    }
   }
 };
 

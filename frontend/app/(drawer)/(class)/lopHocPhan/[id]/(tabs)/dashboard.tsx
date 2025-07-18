@@ -184,7 +184,7 @@ console.log(data,"akasdk")
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.postAuthor}>
-                    {bv.HoGV} {bv.TenGV}
+                    {lop?.HoGV} {lop?.TenGV}
                   </Text>
                   <Text style={styles.postDate}>
                     {bv.NgayTao

@@ -72,6 +72,14 @@ export default function RootLayout() {
         name="tao/addLHP"
         options={{ drawerItemStyle: { display: "none" } }}
       />
+      <Drawer.Screen
+        name="luutru"
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
+      <Drawer.Screen
+        name="tao/addSVLHP"
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
     </Drawer>
   );
 }

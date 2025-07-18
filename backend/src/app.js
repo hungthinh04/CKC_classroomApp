@@ -17,7 +17,6 @@ const app = express();
 
 app.use("/uploads", express.static("uploads"));
 
-
 app.use(cors({
   origin: '*',
   exposedHeaders: ['Content-Range'],
@@ -41,24 +40,7 @@ app.use('/lophocphan', require('./routes/lopHocPhan'));
 app.use('/sinhvien_lhp', require('./routes/sinhvien_lhp'));
 app.use('/api/comments', require("./routes/nhanxet"));
 // app.use('/auth', require('./routes/auth'));
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, // hoặc 'abc'
-  api_key: process.env.CLOUDINARY_API_KEY, // hoặc '123'
-  api_secret: process.env.CLOUDINARY_API_SECRET // hoặc 'xyz'
-});
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'uploads', // Cloudinary folder
-    allowed_formats: ['jpg', 'png', 'jpeg', 'gif']
-  }
-});
-const upload = multer({ storage: storage });
-
-app.post('/uploads', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  res.json({ url: req.file.path });
-});
+app.use('/thongke', require('./routes/thongke'));
 
 module.exports = app;

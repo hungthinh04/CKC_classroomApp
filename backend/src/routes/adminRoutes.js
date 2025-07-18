@@ -47,6 +47,7 @@ const {
   updateBaiViet,
   getBaiVietById,
   deleteBaiViet,
+  getDashboardSummary,
 } = require("../controllers/adminController"); // Import getAllKhoa from adminController
 const { getAllBoMon } = require("../controllers/adminController"); // Import getAllKhoa from adminController
 const { getBoMonById } = require("../controllers/adminController"); // Import getBoMonById from adminController
@@ -140,6 +141,7 @@ router.delete("/baiviet/:id", deleteBaiViet);
 
 
 
+router.get("/thongke", getDashboardSummary);
 // router.get("/baiviet/total", getTotalBaiViet);
 
 // router.post("/tailieu", addTaiLieu);

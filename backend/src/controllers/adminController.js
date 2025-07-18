@@ -2286,59 +2286,105 @@ exports.addBaiViet = async (req, res) => {
 };
 
 exports.getBaiVietById = async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id);  // Ensure 'id' is an integer
   try {
     const result = await pool
       .request()
       .input("ID", sql.Int, id)
-      .query(`SELECT 
-    bv.ID,
-    bv.TieuDe,
-    bv.NoiDung,
-    bv.LoaiBV,
-    bv.MaTK,
-    u.HoTen AS TenNguoiDang,   -- Lấy tên người đăng từ USERS
-    bv.MaLHP,
-    bv.NgayTao,
-    bv.HanNop,
-    bv.TrangThai,
-    bv.MaBaiViet
-FROM BAIVIET bv
-JOIN USERS u ON bv.MaTK = u.ID
-ORDER BY bv.ID DESC;
-`);
-    if (!result.recordset[0])
+      .query(`
+        SELECT 
+          bv.ID,
+          bv.TieuDe,
+          bv.NoiDung,
+          bv.LoaiBV,
+          bv.MaTK,
+          u.HoTen AS TenNguoiDang,  -- Get the name of the user who posted
+          bv.MaLHP,
+          bv.NgayTao,
+          bv.HanNop,
+          bv.TrangThai,
+          bv.MaBaiViet
+        FROM BAIVIET bv
+        JOIN USERS u ON bv.MaTK = u.ID
+        WHERE bv.ID = @ID  -- Filter by ID to fetch specific post
+      `);
+
+    // Check if the post exists
+    if (!result.recordset[0]) {
       return res.status(404).json({ message: "Không tìm thấy bài viết" });
-    res.json(result.recordset[0]);
+    }
+
+    // Return the response in the format that React Admin expects
+    const post = result.recordset[0];
+    res.json({
+        id: post.ID,
+        tieuDe: post.TieuDe,
+        noiDung: post.NoiDung,
+        loaiBV: post.LoaiBV,
+        maTK: post.MaTK,
+        tenNguoiDang: post.TenNguoiDang,
+        maLHP: post.MaLHP,
+        ngayTao: post.NgayTao,
+        hanNop: post.HanNop,
+        trangThai: post.TrangThai,
+        maBaiViet: post.MaBaiViet
+      
+    });
   } catch (err) {
+    console.error("Error querying post:", err);
     res.status(500).json({ message: "Lỗi truy vấn bài viết" });
   }
 };
 
+
 exports.updateBaiViet = async (req, res) => {
-  const id = parseInt(req.params.id);
-  const { tieuDe, noiDung, maTK, maLHP, ngayDang, loai, trangThai } = req.body;
+  const id = parseInt(req.params.id);  // Extract the ID from the request parameters
+  const { tieuDe, noiDung, maTK, maLHP, ngayTao, loaiBV, trangThai } = req.body;
+
+  // Ensure that essential fields are provided
+  if (!tieuDe || !noiDung || !maTK || !maLHP) {
+    return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
+  }
+
   try {
+    // Update the post (Bài viết) in the database
     await pool.request()
       .input("ID", sql.Int, id)
       .input("TieuDe", sql.NVarChar, tieuDe)
       .input("NoiDung", sql.NText, noiDung)
       .input("MaTK", sql.Int, maTK)
       .input("MaLHP", sql.Int, maLHP)
-      .input("NgayDang", sql.DateTime, ngayDang)
-      .input("Loai", sql.Int, loai)
-      .input("TrangThai", sql.SmallInt, trangThai)
+      .input("NgayTao", sql.DateTime, ngayTao || new Date())  // Default to current date if not provided
+      .input("LoaiBV", sql.Int, loaiBV)  // Use correct column name "LoaiBV"
+      .input("TrangThai", sql.SmallInt, trangThai || 1)  // Default to 'active' status (1) if not provided
       .query(`
         UPDATE BAIVIET
-        SET TieuDe = @TieuDe, NoiDung = @NoiDung, MaTK = @MaTK,
-            MaLHP = @MaLHP, NgayDang = @NgayDang, Loai = @Loai, TrangThai = @TrangThai
-        WHERE ID = @ID
+        SET TieuDe = @TieuDe, NoiDung = @NoiDung, MaTK = @MaTK, 
+            MaLHP = @MaLHP, NgayTao = @NgayTao, LoaiBV = @LoaiBV, TrangThai = @TrangThai
+        WHERE ID = @ID;
       `);
-    res.status(200).json({ id, tieuDe, noiDung, maTK, maLHP, ngayDang, loai, trangThai });
+
+    // Respond with the updated post data in the expected format
+    res.status(200).json({
+     
+        id,  // Include the ID of the updated record
+        tieuDe,
+        noiDung,
+        maTK,
+        maLHP,
+        ngayTao,
+        loaiBV,
+        trangThai
+      
+    })
   } catch (err) {
+    // Log and handle the error
+    console.error("Error updating post:", err);
     res.status(500).json({ message: "Không thể cập nhật bài viết" });
   }
 };
+
+
 
 exports.deleteBaiViet = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -2506,10 +2552,13 @@ exports.deleteBaiNop = async (req, res) => {
   }
 };
 
+exports.getDashboardSummaryById
+
 // adminController.js (bổ sung cuối file)
 exports.getDashboardSummary = async (req, res) => {
   try {
     const [
+    
       sv,
       gv,
       lh,
@@ -2519,6 +2568,7 @@ exports.getDashboardSummary = async (req, res) => {
       bv,
       tl,
       nopbai,
+      k,bm
     ] = await Promise.all([
       pool.request().query("SELECT COUNT(*) as total FROM SINHVIEN"),
       pool.request().query("SELECT COUNT(*) as total FROM GIANGVIEN"),
@@ -2529,6 +2579,9 @@ exports.getDashboardSummary = async (req, res) => {
       pool.request().query("SELECT COUNT(*) as total FROM BAIVIET"),
       pool.request().query("SELECT COUNT(*) as total FROM TAILIEU"),
       pool.request().query("SELECT COUNT(*) as total FROM NOPBAI"),
+      
+      pool.request().query("SELECT COUNT(*) as total FROM KHOA"),
+      pool.request().query("SELECT COUNT(*) as total FROM BOMON"),
     ]);
 
     res.json({
@@ -2541,6 +2594,8 @@ exports.getDashboardSummary = async (req, res) => {
       baiViet: bv.recordset[0].total,
       taiLieu: tl.recordset[0].total,
       baiNop: nopbai.recordset[0].total,
+      khoa: k.recordset[0].total,
+      boMon: bm.recordset[0].total
     });
   } catch (err) {
     res.status(500).json({ message: "Lỗi lấy dashboard tổng hợp" });
