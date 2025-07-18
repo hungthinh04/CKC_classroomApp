@@ -41,6 +41,12 @@ const {
   deleteGiangVienLHP,
   addGiangVienLHP,
   getAllGiangVienLHP,
+  addBaiViet,
+  getAllBaiViet,
+  getTotalBaiViet,
+  updateBaiViet,
+  getBaiVietById,
+  deleteBaiViet,
 } = require("../controllers/adminController"); // Import getAllKhoa from adminController
 const { getAllBoMon } = require("../controllers/adminController"); // Import getAllKhoa from adminController
 const { getBoMonById } = require("../controllers/adminController"); // Import getBoMonById from adminController
@@ -125,5 +131,20 @@ router.get('/sinhvien_lhp/:id', getSinhVienLHPById);
 router.post('/sinhvien_lhp', addSinhVienLHP);
 router.put('/sinhvien_lhp/:id', updateSinhVienLHP);
 router.delete('/sinhvien_lhp/:id', deleteSinhVienLHP);
+
+router.post("/baiviet", addBaiViet);
+router.get("/baiviet", getAllBaiViet);
+router.get("/baiviet/:id", getBaiVietById);
+router.put("/baiviet/:id", updateBaiViet);
+router.delete("/baiviet/:id", deleteBaiViet);
+
+
+
+// router.get("/baiviet/total", getTotalBaiViet);
+
+// router.post("/tailieu", addTaiLieu);
+// router.get("/tailieu", getAllTaiLieu);
+// router.get("/tailieu/total", getTotalTaiLieu);
+
 
 module.exports = router;

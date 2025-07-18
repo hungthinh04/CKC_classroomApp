@@ -127,6 +127,29 @@ export default function HomeScreen() {
     }
   };
 
+  const handleEditLHP = (id: number) => {
+router.push(`/tao/edit/${id}?maLHP=abc&loaiBV=1`);
+
+};
+
+  const handleCardMenu = (cls: LopHocPhan) => {
+    Alert.alert(
+      "Tuỳ chọn lớp học phần",
+      cls.tenLHP,
+      [
+        {
+          text: "Chỉnh sửa",
+          onPress: () => handleEditLHP(cls.id),
+        },
+        {
+          text: "Huỷ",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const handleAddLHP = () => {
     router.push("/tao/addLHP");
   };
@@ -196,40 +219,43 @@ export default function HomeScreen() {
           </Text>
         ) : (
           lophocphan.map((cls) => (
-            <TouchableOpacity
-              key={cls.id}
-              style={styles.card}
-              activeOpacity={0.82}
-              onPress={() =>
-                router.push({
-                  pathname:
-                    "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
-                  params: { id: cls.id.toString(), tenLHP: cls.tenLHP },
-                })
-              }
-            >
-              <Image
-                source={require("../../../assets/images/icon.png")}
-                style={styles.bgImage}
-                blurRadius={2}
-              />
-              <View style={styles.overlay} />
-              <View style={styles.cardContent}>
-                <View style={styles.classInfo}>
-                  <Text style={styles.className}>{cls.tenLHP}</Text>
-                  <Text style={styles.term}>
-                    HK{cls.hocKy} – Năm học: {cls.namHoc}
-                  </Text>
+            <View key={cls.id} style={styles.cardWrapper}>
+              <TouchableOpacity
+                style={styles.card}
+                activeOpacity={0.82}
+                onPress={() =>
+                  router.push({
+                    pathname:
+                      "/(drawer)/(class)/lopHocPhan/[id]/(tabs)/dashboard",
+                    params: { id: cls.id.toString(), tenLHP: cls.tenLHP },
+                  })
+                }
+              >
+                <Image
+                  source={require("../../../assets/images/icon.png")}
+                  style={styles.bgImage}
+                  blurRadius={2}
+                />
+                <View style={styles.overlay} />
+                <View style={styles.cardContent}>
+                  <View style={styles.classInfo}>
+                    <Text style={styles.className}>{cls.tenLHP}</Text>
+                    <Text style={styles.term}>
+                      HK{cls.hocKy} – Năm học: {cls.namHoc}
+                    </Text>
+                  </View>
+                  <Text style={styles.subject}>{cls.tenGV}</Text>
                 </View>
-                <Text style={styles.subject}>{cls.tenGV}</Text>
-              </View>
-              <Ionicons
-                name="ellipsis-vertical"
-                size={20}
-                color="white"
+              </TouchableOpacity>
+              {/* Nút 3 chấm, render nằm ngoài card */}
+              <TouchableOpacity
                 style={styles.cardMenu}
-              />
-            </TouchableOpacity>
+                onPress={() => handleCardMenu(cls)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="ellipsis-vertical" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
           ))
         )}
       </ScrollView>
@@ -399,4 +425,3 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 });
-

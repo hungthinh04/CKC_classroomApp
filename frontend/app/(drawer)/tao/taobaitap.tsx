@@ -93,7 +93,7 @@ function BaseForm({
     formData.append("LoaiBV", loaiBV.toString());
     formData.append("MaCD", "1");
     formData.append("GioKetThuc", new Date().toISOString());
-    formData.append("NgayKetThuc", hanNop.toISOString());
+    formData.append("HanNop", hanNop.toISOString());
 
     if (tep) {
       formData.append("file", {

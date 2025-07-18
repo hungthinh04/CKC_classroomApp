@@ -15,6 +15,7 @@ const app = express();
 
 app.use("/uploads", express.static("uploads"));
 
+
 app.use(cors({
   origin: '*',
   exposedHeaders: ['Content-Range'],

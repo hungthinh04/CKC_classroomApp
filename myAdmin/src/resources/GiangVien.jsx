@@ -221,7 +221,7 @@ export const GiangVienList = () => (
     <Datagrid rowClick="edit">
       <FunctionField label="STT" render={(record, index) => index + 1} />
       {/* <TextField source="id" label="ID" />    */}
-      {/* <TextField source="MSGV" label="MSGV" /> */}
+      <TextField source="MaGV" label="Mã Giảng Viên" />
       <TextField source="HoGV" label="Họ" parse={normalizeSpaces}/>
       <TextField source="TenGV" label="Tên" parse={normalizeSpaces}/>
       <TextField source="NgaySinh" label="Ngày sinh" />
@@ -260,9 +260,9 @@ export const GiangVienEdit = () => (
   <Edit>
     <SimpleForm>
       <TextInput source="id" />
-      <TextInput source="msgv" label="MSGV" readOnly />
-         <TextInput source="hoGV" label="Họ" validate={[requiredField, onlyVietnamese]} placeholder="VD: Nguyễn Văn" parse={normalizeSpaces}/>
-        <TextInput source="tenGV" label="Tên" validate={[requiredField, onlyVietnamese]} placeholder="VD: Nam" parse={normalizeSpaces}/>
+      <TextInput source="maGV" label="Mã Giảng Viên" readOnly />
+      <TextInput source="hoGV" label="Họ" validate={[requiredField, onlyVietnamese]} placeholder="VD: Nguyễn Văn" parse={normalizeSpaces}/>
+      <TextInput source="tenGV" label="Tên" validate={[requiredField, onlyVietnamese]} placeholder="VD: Nam" parse={normalizeSpaces}/>
 
         <DateInput
           source="ngaySinh"
@@ -270,8 +270,7 @@ export const GiangVienEdit = () => (
           validate={[
             requiredField,
             minValue("1925-01-01", "Năm sinh phải sau 1925"),
-            regex(/^\d{4}-\d{2}-\d{2}$/, "Định dạng YYYY-MM-DD"),
-          ]}
+            ]}
           max={maxDate()}
           placeholder="YYYY-MM-DD"
         />
@@ -307,7 +306,7 @@ export const GiangVienEdit = () => (
 export const GiangVienCreate = (props) => (
   <Create {...props}>
     <SimpleForm>
-      <TextInput source="msgv" label="MSGV" readOnly />
+      <TextInput source="maGV" label="Mã Giảng Viên" readOnly />
       <TextInput source="hoGV" label="Họ" validate={[requiredField, onlyVietnamese]} placeholder="VD: Nguyễn Văn" parse={normalizeSpaces}/>
         <TextInput source="tenGV" label="Tên" validate={[requiredField, onlyVietnamese]} placeholder="VD: Nam" parse={normalizeSpaces}/>
 
@@ -318,8 +317,7 @@ export const GiangVienCreate = (props) => (
           validate={[
             requiredField,
             minValue("1925-01-01", "Năm sinh phải sau 1925"),
-            regex(/^\d{4}-\d{2}-\d{2}$/, "Định dạng YYYY-MM-DD"),
-          ]}
+             ]}
           max={maxDate()}
           placeholder="YYYY-MM-DD"
         />

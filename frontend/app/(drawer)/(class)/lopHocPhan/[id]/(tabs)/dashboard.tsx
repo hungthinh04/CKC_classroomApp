@@ -153,7 +153,7 @@ console.log(data,"akasdk")
       {/* Danh sách bài viết */}
       <Text style={styles.sectionTitle}>Thông báo lớp</Text>
       {baiViet.length === 0 ? (
-        <Text>Không có thông báo nào</Text>
+        <Text style={{alignItems:"center",textAlign:"center"}}>Không có thông báo nào</Text>
       ) : (
         baiViet
           .filter((bv) => bv.LoaiBV === 0)

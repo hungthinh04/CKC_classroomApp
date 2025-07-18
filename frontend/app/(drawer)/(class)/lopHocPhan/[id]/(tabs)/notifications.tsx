@@ -31,9 +31,24 @@ type BaiViet = {
   duongDanFile?: string | null;
 };
 
+// Hàm tính thời gian còn lại
+function timeLeft(ngayTao?: string | null, ngayKetThuc?: string | null) {
+  if (!ngayKetThuc) return "";
+  const now = new Date();
+  const end = new Date(ngayKetThuc);
+  const diffMs = end.getTime() - now.getTime();
+  if (diffMs <= 0) return "Đã hết hạn";
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+  const diffMinutes = Math.floor((diffMs / (1000 * 60)) % 60);
+  if (diffDays > 0) return `${diffDays} ngày ${diffHours} giờ`;
+  if (diffHours > 0) return `${diffHours} giờ ${diffMinutes} phút`;
+  return `${diffMinutes} phút`;
+}
+
 export default function BaiTapScreen() {
   const { id } = useLopHocPhan();
-    const { user } = useAuth();
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<BaiViet[]>([]);
   const [showModal, setShowModal] = useState(false);
 
@@ -102,12 +117,12 @@ export default function BaiTapScreen() {
   return (
     <View style={styles.root}>
       <FlatList
-  data={tasks}
-  keyExtractor={(item) => item?.id?.toString()}
-  contentContainerStyle={{ padding: 18, paddingBottom: 90 }}
-  ListEmptyComponent={
-    <Text style={{ color: "#aaa", textAlign: "center", marginTop: 24, fontSize: 15 }}>
-      Không có bài tập nào!
+        data={tasks}
+        keyExtractor={(item) => item?.id?.toString()}
+        contentContainerStyle={{ padding: 18, paddingBottom: 90 }}
+        ListEmptyComponent={
+          <Text style={{ color: "#aaa", textAlign: "center", marginTop: 24, fontSize: 15 }}>
+            Không có bài tập nào!
           </Text>
         }
         renderItem={({ item }) => (
@@ -117,13 +132,13 @@ export default function BaiTapScreen() {
                 <Ionicons name="reader-outline" size={17} color="#4666ec" />{" "}
                 {item.tieuDe || "📝 Không có tiêu đề"}
               </Text>
-              {user?.role === 1 && (  // Chỉ hiển thị nút xóa nếu user là giáo viên
+              {user?.role === 1 && (
                 <TouchableOpacity onPress={() => handleDelete(item.id)} hitSlop={10}>
                   <Ionicons name="trash-outline" size={20} color="#f87171" />
                 </TouchableOpacity>
               )}
             </View>
-            <Text style={styles.meta}>Mã: <Text style={{ color: "#4666ec" }}>{item.maBaiViet}</Text></Text>
+            {/* <Text style={styles.meta}>Mã: <Text style={{ color: "#4666ec" }}>{item.maBaiViet}</Text></Text> */}
             <Text style={styles.meta}>
               <Ionicons name="calendar-outline" size={13} color="#b5badb" /> Ngày tạo:{" "}
               {item.ngayTao?.slice(0, 10) || "Chưa có"}
@@ -132,6 +147,17 @@ export default function BaiTapScreen() {
               <Ionicons name="alarm-outline" size={13} color="#fbbf24" /> Hạn nộp:{" "}
               {item.ngayKetThuc?.slice(0, 10) || "Không rõ"}
             </Text>
+            {/* Thời gian còn lại chỉ hiện với bài tập */}
+            {item.loaiBV === 1 && timeLeft(item.ngayTao, item.ngayKetThuc) === "Đã hết hạn" && (
+  <Text
+    style={[
+      styles.meta,
+      { color: "#ef4444", fontWeight: "700" }
+    ]}
+  >
+    <Ionicons name="timer-outline" size={13} color="#ef4444" /> Đã hết hạn
+  </Text>
+)}
             <Text style={styles.content}>{item.noiDung}</Text>
 
             {/* Preview file đính kèm */}

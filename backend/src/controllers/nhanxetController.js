@@ -8,9 +8,16 @@ exports.getCommentsByPostId = async (req, res) => {
       .request()
       .input("MaBV", sql.Int, id)
       .query(`
-        SELECT n.ID, n.NoiDung, n.NgayTao, n.MaTK, u.HoTen
+        SELECT 
+          n.ID, 
+          n.NoiDung, 
+          n.NgayTao, 
+          n.MaTK,
+          COALESCE(sv.HoTen, gv.HoGV + ' ' + gv.TenGV, u.HoTen, u.Email) AS TenNguoiDung
         FROM NHANXET n
         JOIN USERS u ON n.MaTK = u.ID
+        LEFT JOIN SINHVIEN sv ON sv.MaTK = u.ID
+        LEFT JOIN GIANGVIEN gv ON gv.MaTK = u.ID
         WHERE n.MaBV = @MaBV
         ORDER BY n.NgayTao DESC
       `);
@@ -20,6 +27,7 @@ exports.getCommentsByPostId = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi lấy nhận xét" });
   }
 };
+
 
 
 // POST /baiviet/:id/comment

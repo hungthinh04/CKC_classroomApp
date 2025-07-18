@@ -76,7 +76,35 @@ exports.createBaiViet = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi tạo bài viết" });
   }
 };
+exports.getDanhSachBaiNopByBaiViet = async (req, res) => {
+  const { maBaiViet } = req.params;
+  if (!maBaiViet) {
+    return res.status(400).json({ message: "Thiếu mã bài viết" });
+  }
+  try {
+    const result = await pool.request()
+      .input("MaBaiViet", sql.Int, maBaiViet)
+      .query(`
+        SELECT
+          nb.ID,
+          nb.MaSV,
+          sv.HoTen,
+          nb.NgayNop,
+          nb.Diem,
+          nb.VanBan,
+          nb.FileDinhKem
+        FROM NOPBAI nb
+        JOIN SINHVIEN sv ON nb.MaSV = sv.ID
+        WHERE nb.MaBaiViet = @MaBaiViet
+        ORDER BY nb.NgayNop DESC
+      `);
 
+    res.json(result.recordset);
+  } catch (err) {
+    console.error("Lỗi khi lấy danh sách bài nộp:", err);
+    res.status(500).json({ message: "Lỗi khi lấy danh sách bài nộp" });
+  }
+};
 
 exports.getBaiVietTheoLoai = async (req, res) => {
   const { maLHP, loaiBV } = req.query;

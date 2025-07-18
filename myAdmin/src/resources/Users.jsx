@@ -20,19 +20,33 @@ export const UserList = () => (
       <TextField source="maNguoiDung" label="Mã Người Dùng" />
       <TextField source="email" label="Email" />
       <TextField source="hoTen" label="Họ Tên" />
+      {/* Có thể ẩn password, chỉ dùng để test */}
       <TextField source="matKhau" label="Mật Khẩu" />
-      <TextField source="quyen" label="Quyền" />
-      <TextField source="trangThai" label="Trạng Thái" />
+      <FunctionField
+        label="Quyền"
+        render={record =>
+          record.quyen === 0 ? "Sinh viên" :
+          record.quyen === 1 ? "Giảng viên" :
+          "Admin"
+        }
+      />
+      <FunctionField
+        label="Trạng Thái"
+        render={record =>
+          record.trangThai === 1 ? "Đang Học" :
+          record.trangThai === 2 ? "Đã Tốt Nghiệp" :
+          "Bị Đình Chỉ"
+        }
+      />
       <EditButton />
     </Datagrid>
   </List>
 );
 
-// Edit User
 export const UserEdit = () => (
   <Edit>
     <SimpleForm>
-      <TextInput source="maNguoiDung" label="Mã Người Dùng"  />
+      <TextInput source="maNguoiDung" label="Mã Người Dùng" />
       <TextInput source="email" label="Email" />
       <TextInput source="matKhau" label="Mật Khẩu" />
       <TextInput source="hoTen" label="Họ Tên" />
@@ -49,9 +63,9 @@ export const UserEdit = () => (
         source="trangThai"
         label="Trạng Thái"
         choices={[
-          { id: 1, name: "Đang Học" },
-          { id: 0, name: "Bị Đình Chỉ" },
+          { id: 1, name: "Đang Hoạt động" },
           { id: 2, name: "Đã Tốt Nghiệp" },
+          { id: 0, name: "Bị Đình Chỉ" },
         ]}
       />
     </SimpleForm>

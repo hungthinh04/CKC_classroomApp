@@ -28,16 +28,30 @@ exports.getKhoaById = async (req, res) => {
 exports.getUserById = async (req, res) => {
   const id = parseInt(req.params.id);
   try {
-    const result = await pool
-      .request()
+    const result = await pool.request()
       .input("ID", sql.Int, id)
-      .query("SELECT * FROM USERS WHERE ID = @ID");
+      .query(`
+        SELECT 
+          u.ID,
+          u.Email,
+          u.MatKhau,
+          u.Quyen,
+          u.TrangThai,
+          u.MaNguoiDung,
+          COALESCE(sv.HoTen, 
+            CASE WHEN gv.HoGV IS NOT NULL THEN gv.HoGV + ' ' + gv.TenGV ELSE NULL END, 
+            u.HoTen) AS HoTen
+        FROM USERS u
+        LEFT JOIN SINHVIEN sv ON u.ID = sv.MaTK
+        LEFT JOIN GIANGVIEN gv ON u.ID = gv.MaTK
+        WHERE u.ID = @ID
+      `);
 
     const user = result.recordset[0];
     if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
 
     res.json({
-      id: user.id,
+      id: user.ID,
       maNguoiDung: user.MaNguoiDung,
       email: user.Email,
       matKhau: user.MatKhau,
@@ -50,6 +64,7 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ message: "Lỗi truy vấn user" });
   }
 };
+
 
 exports.getLopHocById = async (req, res) => {
   const id = req.params.id;
@@ -159,7 +174,7 @@ exports.getGiangVienById = async (req, res) => {
 
     res.json({
       id: gv.ID,
-      msgv: gv.MSGV,
+      maGV: gv.MaGV,
       hoGV: gv.HoGV,
       tenGV: gv.TenGV,
       ngaySinh: gv.NgaySinh,
@@ -265,6 +280,7 @@ exports.getAllLopHoc = async (req, res) => {
     res.status(500).json({ message: "Lỗi truy vấn khoa" });
   }
 };
+
 exports.getAllUsers = async (req, res) => {
   try {
     const result = await pool.request().query(`
@@ -275,7 +291,10 @@ exports.getAllUsers = async (req, res) => {
         u.Quyen,
         u.TrangThai,
         u.MaNguoiDung,
-        COALESCE(sv.HoTen, gv.HoGV + ' ' + gv.TenGV, u.HoTen) AS HoTen
+        -- Lấy tên ưu tiên: SV > GV > Admin
+        COALESCE(sv.HoTen, 
+          CASE WHEN gv.HoGV IS NOT NULL THEN gv.HoGV + ' ' + gv.TenGV ELSE NULL END, 
+          u.HoTen) AS HoTen
       FROM USERS u
       LEFT JOIN SINHVIEN sv ON u.ID = sv.MaTK
       LEFT JOIN GIANGVIEN gv ON u.ID = gv.MaTK
@@ -302,6 +321,7 @@ exports.getAllUsers = async (req, res) => {
     res.status(500).json({ message: "Lỗi truy vấn users" });
   }
 };
+
 
 exports.getAllSinhVien = async (req, res) => {
   try {
@@ -902,7 +922,7 @@ exports.addGiangVien = async (req, res) => {
 exports.updateGiangVien = async (req, res) => {
   const id = parseInt(req.params.id);
   const {
-    msgv,
+    maGV,
     hoGV,
     tenGV,
     ngaySinh,
@@ -920,7 +940,7 @@ exports.updateGiangVien = async (req, res) => {
     await pool
       .request()
       .input("ID", sql.Int, id)
-      .input("MSGV", sql.VarChar(10), msgv)
+      .input("MaGV", sql.Int, maGV)
       .input("HoGV", sql.NVarChar(255), hoGV)
       .input("TenGV", sql.NVarChar(255), tenGV)
       .input("NgaySinh", sql.DateTime, ngaySinh)
@@ -933,7 +953,7 @@ exports.updateGiangVien = async (req, res) => {
       .input("TrangThai", sql.SmallInt, trangThai)
       .input("MaGiangVien", sql.NVarChar(20), maGiangVien).query(`
         UPDATE GIANGVIEN SET
-          MSGV = @MSGV,
+          MaGV = @MaGV,
           HoGV = @HoGV,
           TenGV = @TenGV,
           NgaySinh = @NgaySinh,
@@ -950,7 +970,7 @@ exports.updateGiangVien = async (req, res) => {
 
     res.status(200).json({
       id,
-      msgv,
+      maGV,
       hoGV,
       tenGV,
       ngaySinh,
@@ -1134,7 +1154,7 @@ exports.deleteKhoa = async (req, res) => {
 };
 exports.updateSinhVien = async (req, res) => {
   const id = parseInt(req.params.id); // ID từ URL
-
+console.log(id," id");
   const { MaSinhVien, MaTK, MaLopHoc, HoTen } = req.body;
 
   console.log(req.body);
@@ -1204,30 +1224,6 @@ exports.deleteSinhVien = async (req, res) => {
 
 
 
-exports.deleteSinhVien = async (req, res) => {
-  const id = req.params.id;
-  try {
-    // 1. Lấy MaTK trước khi xóa
-    const sv = await pool.request()
-      .input("ID", sql.Int, id)
-      .query("SELECT MaTK FROM SINHVIEN WHERE ID = @ID");
-    if (!sv.recordset[0]) {
-      return res.status(404).json({ message: "Không tìm thấy sinh viên" });
-    }
-    const maTK = sv.recordset[0].MaTK;
-
-    // 2. Xóa sinh viên
-    await pool.request().input("ID", sql.Int, id).query("DELETE FROM SINHVIEN WHERE ID = @ID");
-    // 3. Xóa user
-    await pool.request().input("ID", sql.Int, maTK).query("DELETE FROM USERS WHERE ID = @ID");
-
-    res.status(200).json({ id: parseInt(id), message: "Xóa sinh viên thành công" });
-  } catch (err) {
-    console.error("Lỗi khi xóa sinh viên:", err);
-    res.status(500).json({ message: "Lỗi khi xóa sinh viên" });
-  }
-};
-
 // exports.getAllUsers = async (req, res) => {
 //   try {
 //     const result = await pool.request().query("SELECT * FROM USERS");
@@ -1289,16 +1285,14 @@ exports.deleteSinhVien = async (req, res) => {
 // };
 exports.updateUsers = async (req, res) => {
   const id = parseInt(req.params.id);
-  const { maNguoiDung, email, matKhau, hoTen, quyen, trangThai } = req.body; // 👈 camelCase đúng như frontend gửi
+  const { maNguoiDung, email, matKhau, hoTen, quyen, trangThai } = req.body;
 
   if (!maNguoiDung || !email || !matKhau) {
-    console.log("📥 Thiếu thông tin:", req.body);
     return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
   }
 
   try {
-    console.log("🔄 Cập nhật USER:", req.body);
-
+    // 1. Cập nhật bảng USERS
     await pool
       .request()
       .input("ID", sql.Int, id)
@@ -1318,6 +1312,67 @@ exports.updateUsers = async (req, res) => {
         WHERE ID = @ID
       `);
 
+    // 2. Nếu là sinh viên, cập nhật luôn bảng SINHVIEN (nếu có)
+    exports.updateUsers = async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { hoTen, matKhau, quyen } = req.body; // quyen: 0 = SV, 1 = GV
+
+  if (!hoTen || !matKhau) {
+    return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
+  }
+
+  // Hàm tách họ và tên cho giảng viên
+  function splitHoTen(hoTen) {
+    if (!hoTen) return { hoGV: '', tenGV: '' };
+    const arr = hoTen.trim().split(' ');
+    const tenGV = arr.pop();
+    const hoGV = arr.join(' ');
+    return { hoGV, tenGV };
+  }
+
+  try {
+    // 1. Update bảng USERS
+    await pool
+      .request()
+      .input("ID", sql.Int, id)
+      .input("HoTen", sql.NVarChar(255), hoTen)
+      .input("MatKhau", sql.NVarChar(255), matKhau)
+      .query(`
+        UPDATE USERS
+        SET HoTen = @HoTen,
+            MatKhau = @MatKhau
+        WHERE ID = @ID
+      `);
+
+    // 2. Đồng bộ tên ở bảng con
+    if (quyen === 0) {
+      await pool
+        .request()
+        .input("MaTK", sql.Int, id)
+        .input("HoTen", sql.NVarChar(255), hoTen)
+        .query(`
+          UPDATE SINHVIEN SET HoTen = @HoTen WHERE MaTK = @MaTK
+        `);
+    } else if (quyen === 1) {
+      // Giảng viên: tách thành HoGV và TenGV
+      const { hoGV, tenGV } = splitHoTen(hoTen);
+      await pool
+        .request()
+        .input("MaTK", sql.Int, id)
+        .input("HoGV", sql.NVarChar(255), hoGV)
+        .input("TenGV", sql.NVarChar(255), tenGV)
+        .query(`
+          UPDATE GIANGVIEN SET HoGV = @HoGV, TenGV = @TenGV WHERE MaTK = @MaTK
+        `);
+    }
+
+    res.status(200).json({ id, hoTen, matKhau });
+  } catch (err) {
+    console.error("❌ Lỗi cập nhật user:", err);
+    res.status(500).json({ message: "Không thể cập nhật user" });
+  }
+};
+
     res.status(200).json({
       id,
       maNguoiDung,
@@ -1328,10 +1383,10 @@ exports.updateUsers = async (req, res) => {
       trangThai,
     });
   } catch (err) {
-    console.error("❌ Lỗi cập nhật user:", err);
     res.status(500).json({ message: "Không thể cập nhật user" });
   }
 };
+
 
 exports.deleteUsers = async (req, res) => {
   const id = req.params.id;
@@ -1862,32 +1917,6 @@ exports.getGiangVienLHPById = async (req, res) => {
     res.status(500).json({ message: "Lỗi truy vấn" });
   }
 };
-exports.getBaiVietById = async (req, res) => {
-  const id = parseInt(req.params.id);
-  try {
-    const result = await pool
-      .request()
-      .input("ID", sql.Int, id)
-      .query("SELECT * FROM BAIVIET WHERE ID = @ID");
-
-    const baiViet = result.recordset[0];
-
-    if (!baiViet) {
-      return res.status(404).json({ message: "Không tìm thấy bài viết" });
-    }
-
-    // Đảm bảo dữ liệu có trường `id` và đóng gói trong `data`
-    res.json({
-      data: {
-        id: baiViet.ID, // Đảm bảo có trường `id`
-        ...baiViet, // Các trường còn lại
-      },
-    });
-  } catch (err) {
-    console.error("Lỗi khi truy vấn bài viết:", err);
-    res.status(500).json({ message: "Lỗi truy vấn bài viết" });
-  }
-};
 exports.updateGiangVienLHP = async (req, res) => {
   const id = parseInt(req.params.id);
   const { maGV, maLHP, trangThai } = req.body;
@@ -2151,3 +2180,370 @@ exports.getTotalUsers = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi lấy tổng số người dùng" });
   }
 };
+
+
+exports.getAllBaiViet = async (req, res) => {
+  try {
+    // Cho phép sort một số trường
+    const allowedSortFields = ["ID", "TieuDe", "LoaiBV", "NgayTao", "MaLHP"];
+    const sortParam = req.query.sort ? JSON.parse(req.query.sort) : ["ID", "ASC"];
+    const [sortField, sortOrder] = sortParam;
+
+    const sortFieldSafe = allowedSortFields.includes(sortField) ? sortField : "ID";
+    const sortOrderSafe = sortOrder && sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+
+    // Phân trang
+    const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
+    const [start, end] = range;
+    const limit = end - start + 1;
+
+    // Lọc
+    const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
+    const tieuDe = filter.TieuDe || "";
+    const loaiBV = filter.LoaiBV !== undefined ? filter.LoaiBV : null; // số, null hoặc undefined
+
+    // Truy vấn dữ liệu (có phân trang và filter)
+    let whereSql = "WHERE 1=1";
+    if (tieuDe) whereSql += " AND TieuDe LIKE @TieuDe";
+    if (loaiBV !== null) whereSql += " AND LoaiBV = @LoaiBV";
+
+    const request = pool.request();
+    if (tieuDe) request.input("TieuDe", sql.NVarChar, `%${tieuDe}%`);
+    if (loaiBV !== null) request.input("LoaiBV", sql.SmallInt, loaiBV);
+    request.input("start", sql.Int, start);
+    request.input("limit", sql.Int, limit);
+
+    const query = `
+      SELECT bv.*, 
+        COALESCE(sv.HoTen, 
+          CASE WHEN gv.HoGV IS NOT NULL THEN gv.HoGV + ' ' + gv.TenGV ELSE NULL END, 
+          u.HoTen) AS TenNguoiDang
+      FROM BAIVIET bv
+      LEFT JOIN USERS u ON bv.MaTK = u.ID
+      LEFT JOIN SINHVIEN sv ON u.ID = sv.MaTK
+      LEFT JOIN GIANGVIEN gv ON u.ID = gv.MaTK
+      ${whereSql}
+      ORDER BY ${sortFieldSafe} ${sortOrderSafe}
+      OFFSET @start ROWS FETCH NEXT @limit ROWS ONLY
+    `;
+
+    const result = await request.query(query);
+
+    // Đếm tổng số (cho phân trang)
+    const countRequest = pool.request();
+    if (tieuDe) countRequest.input("TieuDe", sql.NVarChar, `%${tieuDe}%`);
+    if (loaiBV !== null) countRequest.input("LoaiBV", sql.SmallInt, loaiBV);
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM BAIVIET
+      ${whereSql}
+    `;
+    const countResult = await countRequest.query(countQuery);
+
+    const total = countResult.recordset[0].total;
+
+    res.set("Content-Range", `baiviet ${start}-${start + result.recordset.length - 1}/${total}`);
+    res.set("Access-Control-Expose-Headers", "Content-Range");
+
+    // Đảm bảo có trường id cho React Admin
+    const data = result.recordset.map(item => ({
+      ...item,
+      id: item.ID,
+        tenNguoiDang: item.TenNguoiDang,
+    }));
+
+    res.json(data);
+  } catch (err) {
+    console.error("❌ Lỗi truy vấn bài viết:", err);
+    res.status(500).json({ message: "Lỗi truy vấn bài viết" });
+  }
+};
+
+
+exports.addBaiViet = async (req, res) => {
+  const { tieuDe, noiDung, maTK, maLHP, ngayDang, loai, trangThai } = req.body;
+  try {
+    await pool.request()
+      .input("TieuDe", sql.NVarChar, tieuDe)
+      .input("NoiDung", sql.NText, noiDung)
+      .input("MaTK", sql.Int, maTK)
+      .input("MaLHP", sql.Int, maLHP)
+      .input("NgayDang", sql.DateTime, ngayDang)
+      .input("Loai", sql.Int, loai)
+      .input("TrangThai", sql.SmallInt, trangThai || 1)
+      .query(`
+        INSERT INTO BAIVIET (TieuDe, NoiDung, MaTK, MaLHP, NgayDang, Loai, TrangThai)
+        VALUES (@TieuDe, @NoiDung, @MaTK, @MaLHP, @NgayDang, @Loai, @TrangThai)
+      `);
+
+    const result = await pool.request().query(`SELECT TOP 1 * FROM BAIVIET ORDER BY ID DESC`);
+    const inserted = result.recordset[0];
+    res.status(201).json({ id: inserted.ID, ...inserted });
+  } catch (err) {
+    console.error("Lỗi thêm bài viết:", err);
+    res.status(500).json({ message: "Không thể thêm bài viết" });
+  }
+};
+
+exports.getBaiVietById = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    const result = await pool
+      .request()
+      .input("ID", sql.Int, id)
+      .query(`SELECT 
+    bv.ID,
+    bv.TieuDe,
+    bv.NoiDung,
+    bv.LoaiBV,
+    bv.MaTK,
+    u.HoTen AS TenNguoiDang,   -- Lấy tên người đăng từ USERS
+    bv.MaLHP,
+    bv.NgayTao,
+    bv.HanNop,
+    bv.TrangThai,
+    bv.MaBaiViet
+FROM BAIVIET bv
+JOIN USERS u ON bv.MaTK = u.ID
+ORDER BY bv.ID DESC;
+`);
+    if (!result.recordset[0])
+      return res.status(404).json({ message: "Không tìm thấy bài viết" });
+    res.json(result.recordset[0]);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi truy vấn bài viết" });
+  }
+};
+
+exports.updateBaiViet = async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { tieuDe, noiDung, maTK, maLHP, ngayDang, loai, trangThai } = req.body;
+  try {
+    await pool.request()
+      .input("ID", sql.Int, id)
+      .input("TieuDe", sql.NVarChar, tieuDe)
+      .input("NoiDung", sql.NText, noiDung)
+      .input("MaTK", sql.Int, maTK)
+      .input("MaLHP", sql.Int, maLHP)
+      .input("NgayDang", sql.DateTime, ngayDang)
+      .input("Loai", sql.Int, loai)
+      .input("TrangThai", sql.SmallInt, trangThai)
+      .query(`
+        UPDATE BAIVIET
+        SET TieuDe = @TieuDe, NoiDung = @NoiDung, MaTK = @MaTK,
+            MaLHP = @MaLHP, NgayDang = @NgayDang, Loai = @Loai, TrangThai = @TrangThai
+        WHERE ID = @ID
+      `);
+    res.status(200).json({ id, tieuDe, noiDung, maTK, maLHP, ngayDang, loai, trangThai });
+  } catch (err) {
+    res.status(500).json({ message: "Không thể cập nhật bài viết" });
+  }
+};
+
+exports.deleteBaiViet = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    await pool.request()
+      .input("ID", sql.Int, id)
+      .query("DELETE FROM BAIVIET WHERE ID = @ID");
+    res.status(200).json({ id, message: "Đã xóa bài viết" });
+  } catch (err) {
+    res.status(500).json({ message: "Không thể xóa bài viết" });
+  }
+};
+
+exports.getTotalBaiViet = async (req, res) => {
+  try {
+    const result = await pool.request().query("SELECT COUNT(*) AS total FROM BAIVIET");
+    res.status(200).json({ total: result.recordset[0].total });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi thống kê bài viết" });
+  }
+};
+exports.getTotalTaiLieu = async (req, res) => {
+  try {
+    const result = await pool.request().query("SELECT COUNT(*) AS total FROM TAILIEU");
+    res.status(200).json({ total: result.recordset[0].total });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi thống kê tài liệu" });
+  }
+};
+
+exports.getAllBaiNop = async (req, res) => {
+  try {
+    // Sort, phân trang, lọc
+    const allowedSortFields = ["ID", "MaSV", "MaLHP", "MaBaiViet", "NgayNop"];
+    const sortParam = req.query.sort ? JSON.parse(req.query.sort) : ["ID", "ASC"];
+    const [sortField, sortOrder] = sortParam;
+    const sortFieldSafe = allowedSortFields.includes(sortField) ? sortField : "ID";
+    const sortOrderSafe = sortOrder && sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+
+    const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
+    const [start, end] = range;
+    const limit = end - start + 1;
+
+    const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
+    const maLHP = filter.MaLHP || null;
+    const maSV = filter.MaSV || null;
+    const maBaiViet = filter.MaBaiViet || null;
+
+    let whereSql = "WHERE 1=1";
+    if (maLHP) whereSql += " AND MaLHP = @MaLHP";
+    if (maSV) whereSql += " AND MaSV = @MaSV";
+    if (maBaiViet) whereSql += " AND MaBaiViet = @MaBaiViet";
+
+    const request = pool.request();
+    if (maLHP) request.input("MaLHP", sql.Int, maLHP);
+    if (maSV) request.input("MaSV", sql.Int, maSV);
+    if (maBaiViet) request.input("MaBaiViet", sql.Int, maBaiViet);
+    request.input("start", sql.Int, start);
+    request.input("limit", sql.Int, limit);
+
+    const query = `
+      SELECT * FROM NOPBAI
+      ${whereSql}
+      ORDER BY ${sortFieldSafe} ${sortOrderSafe}
+      OFFSET @start ROWS FETCH NEXT @limit ROWS ONLY
+    `;
+    const result = await request.query(query);
+
+    // Đếm tổng
+    const countRequest = pool.request();
+    if (maLHP) countRequest.input("MaLHP", sql.Int, maLHP);
+    if (maSV) countRequest.input("MaSV", sql.Int, maSV);
+    if (maBaiViet) countRequest.input("MaBaiViet", sql.Int, maBaiViet);
+    const countResult = await countRequest.query(`
+      SELECT COUNT(*) AS total FROM NOPBAI ${whereSql}
+    `);
+    const total = countResult.recordset[0].total;
+
+    res.set("Content-Range", `nopbai ${start}-${start + result.recordset.length - 1}/${total}`);
+    res.set("Access-Control-Expose-Headers", "Content-Range");
+    const data = result.recordset.map(item => ({ ...item, id: item.ID }));
+    res.json(data);
+  } catch (err) {
+    console.error("❌ Lỗi truy vấn bài nộp:", err);
+    res.status(500).json({ message: "Lỗi truy vấn bài nộp" });
+  }
+};
+
+exports.getBaiNopById = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    const result = await pool
+      .request()
+      .input("ID", sql.Int, id)
+      .query("SELECT * FROM NOPBAI WHERE ID = @ID");
+    if (!result.recordset[0])
+      return res.status(404).json({ message: "Không tìm thấy bài nộp" });
+    res.json({ ...result.recordset[0], id });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi truy vấn bài nộp" });
+  }
+};
+
+exports.addBaiNop = async (req, res) => {
+  const { MaSV, MaLHP, MaBaiViet, Diem, FileDinhKem, VanBan, TrangThai, NgayNop } = req.body;
+  try {
+    await pool.request()
+      .input("MaSV", sql.Int, MaSV)
+      .input("MaLHP", sql.Int, MaLHP)
+      .input("MaBaiViet", sql.Int, MaBaiViet)
+      .input("Diem", sql.Float, Diem || null)
+      .input("FileDinhKem", sql.NVarChar(255), FileDinhKem || null)
+      .input("VanBan", sql.Text, VanBan || null)
+      .input("TrangThai", sql.SmallInt, TrangThai || 1)
+      .input("NgayNop", sql.DateTime, NgayNop || new Date())
+      .query(`
+        INSERT INTO NOPBAI (MaSV, MaLHP, MaBaiViet, Diem, FileDinhKem, VanBan, TrangThai, NgayNop)
+        VALUES (@MaSV, @MaLHP, @MaBaiViet, @Diem, @FileDinhKem, @VanBan, @TrangThai, @NgayNop)
+      `);
+
+    const result = await pool.request().query("SELECT TOP 1 * FROM NOPBAI ORDER BY ID DESC");
+    const inserted = result.recordset[0];
+    res.status(201).json({ id: inserted.ID, ...inserted });
+  } catch (err) {
+    console.error("❌ Lỗi thêm bài nộp:", err);
+    res.status(500).json({ message: "Không thể thêm bài nộp" });
+  }
+};
+
+exports.updateBaiNop = async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { Diem, FileDinhKem, VanBan, TrangThai, NgayNop } = req.body;
+  try {
+    await pool.request()
+      .input("ID", sql.Int, id)
+      .input("Diem", sql.Float, Diem || null)
+      .input("FileDinhKem", sql.NVarChar(255), FileDinhKem || null)
+      .input("VanBan", sql.Text, VanBan || null)
+      .input("TrangThai", sql.SmallInt, TrangThai || 1)
+      .input("NgayNop", sql.DateTime, NgayNop || new Date())
+      .query(`
+        UPDATE NOPBAI
+        SET Diem = @Diem,
+            FileDinhKem = @FileDinhKem,
+            VanBan = @VanBan,
+            TrangThai = @TrangThai,
+            NgayNop = @NgayNop
+        WHERE ID = @ID
+      `);
+    res.status(200).json({ id, Diem, FileDinhKem, VanBan, TrangThai, NgayNop });
+  } catch (err) {
+    res.status(500).json({ message: "Không thể cập nhật bài nộp" });
+  }
+};
+
+exports.deleteBaiNop = async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    await pool.request()
+      .input("ID", sql.Int, id)
+      .query("DELETE FROM NOPBAI WHERE ID = @ID");
+    res.status(200).json({ id, message: "Đã xóa bài nộp" });
+  } catch (err) {
+    res.status(500).json({ message: "Không thể xóa bài nộp" });
+  }
+};
+
+// adminController.js (bổ sung cuối file)
+exports.getDashboardSummary = async (req, res) => {
+  try {
+    const [
+      sv,
+      gv,
+      lh,
+      mh,
+      lhp,
+      users,
+      bv,
+      tl,
+      nopbai,
+    ] = await Promise.all([
+      pool.request().query("SELECT COUNT(*) as total FROM SINHVIEN"),
+      pool.request().query("SELECT COUNT(*) as total FROM GIANGVIEN"),
+      pool.request().query("SELECT COUNT(*) as total FROM LOPHOC"),
+      pool.request().query("SELECT COUNT(*) as total FROM MONHOC"),
+      pool.request().query("SELECT COUNT(*) as total FROM LOPHOCPHAN"),
+      pool.request().query("SELECT COUNT(*) as total FROM USERS"),
+      pool.request().query("SELECT COUNT(*) as total FROM BAIVIET"),
+      pool.request().query("SELECT COUNT(*) as total FROM TAILIEU"),
+      pool.request().query("SELECT COUNT(*) as total FROM NOPBAI"),
+    ]);
+
+    res.json({
+      sinhVien: sv.recordset[0].total,
+      giangVien: gv.recordset[0].total,
+      lopHoc: lh.recordset[0].total,
+      monHoc: mh.recordset[0].total,
+      lopHocPhan: lhp.recordset[0].total,
+      users: users.recordset[0].total,
+      baiViet: bv.recordset[0].total,
+      taiLieu: tl.recordset[0].total,
+      baiNop: nopbai.recordset[0].total,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi lấy dashboard tổng hợp" });
+  }
+};
+

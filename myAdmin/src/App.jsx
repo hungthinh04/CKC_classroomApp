@@ -26,6 +26,7 @@ import {
 import './css/styles.css'; // Import custom styles
 import { PhanCongGiangVienCreate, PhanCongGiangVienEdit, PhanCongGiangVienList } from "./resources/PhanCongGV";
 import { PhanCongSinhVienCreate, PhanCongSinhVienEdit, PhanCongSinhVienList } from "./resources/PhanCongSV";
+import { BaiVietEdit, BaiVietList } from "./resources/BaiViet";
 const dataProvider = simpleRestProvider("https://ckc-classroomappp.onrender.com/admin");
 
 function App() {
@@ -101,6 +102,8 @@ function App() {
         create={LopHocPhanCreate}
         edit={LopHocPhanEdit}
       />
+
+      <Resource name="baiviet" options={{ label: "Bài Viết" }} list={BaiVietList}  edit={BaiVietEdit} />
     </Admin>
   );
 }

@@ -19,7 +19,8 @@ import {
   DateInput,
   required,
   maxValue,
-  minValue
+  minValue,
+  DateField
 } from "react-admin";
 
 const getCurrentDate = () => {
@@ -34,7 +35,8 @@ export const LopHocList = () => (
       {/* <FunctionField label="STT" render={(record, index) => index + 1} /> */}
       <TextField source="maLop" label="Mã lớp" />
       <TextField source="tenLop" label="Tên lớp" />
-      <TextField source="ngayTao" label="Ngày tạo" />
+   <DateField source="ngayTao" label="Ngày tạo" showTime={false} locales="vi-VN" />
+
       
       <ReferenceField source="maBM" reference="bomon" label="Bộ môn" link={false}>
         <TextField source="TenBM"/>
@@ -65,7 +67,9 @@ export const LopHocEdit = () => (
     <SimpleForm>
       <TextInput source="maLop" label="Mã lớp" readOnly/>
       <TextInput source="tenLop" label="Tên lớp" />
-      <TextInput source="ngayTao" label="Ngày tạo" />
+      {/* <TextInput source="ngayTao" label="Ngày tạo" /> */}
+      <DateField source="ngayTao" label="Ngày tạo" showTime={false} locales="vi-VN" />
+
       <ReferenceInput source="maBM" reference="bomon" label="Bộ môn">
         <AutocompleteInput optionText="TenBM" label="Tên bộ môn"/>
       </ReferenceInput>

@@ -33,6 +33,7 @@ export default function ChiTietBaiTapScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentSubmission, setCurrentSubmission] = useState<any>(null);
   const [sv, setSv] = useState<any>(null);
+  const [dsBaiNop, setDsBaiNop] = useState([]);
 
   useEffect(() => {
     fetch(`${BASE_URL}/baiviet/chitiet/${id}`)
@@ -76,6 +77,10 @@ export default function ChiTietBaiTapScreen() {
     fetchMaSV();
   }, []);
   // Lấy thông tin bài tập từ backend
+function isExpired(dateString?: string) {
+  if (!dateString) return false;
+  return new Date(dateString).getTime() < Date.now();
+}
 
   // Lấy bài đã nộp
   const refreshData = async () => {
@@ -95,7 +100,7 @@ export default function ChiTietBaiTapScreen() {
       setBaiNop(res.data);
       // Alert.alert("Thông báo", "Bạn đã nộp bài rồi.");
     } else {
-      // Nếu không có bài nộp
+      // Nếu không có bài nộp 
       setBaiNop([]);
     }
   } catch (err) {
@@ -190,6 +195,23 @@ export default function ChiTietBaiTapScreen() {
       setLoading(false);
     }
   };
+
+fetch(`${BASE_URL}/baiviet/bainop/danhsach/${id}`)
+  .then(async (res) => {
+    const txt = await res.text();
+    console.log("⏩ Status:", res.status, "Text:", txt.slice(0, 500)); // log thử 500 ký tự đầu
+    if (!res.ok) throw new Error("HTTP error " + res.status);
+    try {
+      return JSON.parse(txt);
+    } catch (e) {
+      throw new Error("JSON parse error: " + txt.slice(0, 200));
+    }
+  })
+  .then(setDsBaiNop)
+  .catch((err) => {
+    console.error("❌ Lỗi lấy danh sách bài nộp:", err);
+  });
+
 
   // Quản lý menu bài nộp (Sửa/Xóa)
   const handleMenuToggle = (id: number) => {
@@ -297,66 +319,121 @@ const handleUpdate = async () => {
     {/* Thông tin bài tập */}
     <Text style={styles.title}>{bv.tieuDe}</Text>
     <Text style={styles.content}>{bv.noiDung}</Text>
-    <Text style={styles.meta}>
-      ⏰ Hạn nộp: {bv.hanNop?.slice(0, 10)} <Text>Lúc</Text>{" "}
-      {bv.hanNop?.slice(12, 19)}
+    {/* Hạn nộp nổi bật */}
+{bv.hanNop && (
+  <View style={{
+    backgroundColor: isExpired(bv.hanNop) ? "#fee2e2" : "#e0e7ff",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center"
+  }}>
+    <Ionicons
+      name="alarm-outline"
+      size={18}
+      color={isExpired(bv.hanNop) ? "#ef4444" : "#4666ec"}
+      style={{ marginRight: 7 }}
+    />
+    <Text style={{
+      color: isExpired(bv.hanNop) ? "#ef4444" : "#2563eb",
+      fontWeight: "bold",
+      fontSize: 16
+    }}>
+      Hạn nộp: {bv.hanNop?.slice(0, 10)} lúc {bv.hanNop?.slice(11, 16)}
+      {isExpired(bv.hanNop) && " (Đã hết hạn)"}
     </Text>
+  </View>
+)}
+
     <Text style={styles.meta}>👨‍🏫 GV: {bv.tenNguoiDang}</Text>
 
     {/* Ô nộp bài */}
     <View style={styles.submitBox}>
-      <Text style={styles.sectionLabel}>Nộp bài tập của bạn</Text>
-      
-      {baiNop.length > 0 ? (
-        // Nếu đã nộp bài, hiển thị tùy chọn sửa
-        <>
-          <Text>Bạn đã nộp bài rồi.</Text>
-          <TouchableOpacity
-            onPress={() => handleEdit(baiNop[0])}
-            style={styles.chooseFileBtn}
-          >
-            <Text style={styles.chooseFileText}>Sửa bài nộp</Text>
-          </TouchableOpacity>
-        </>
+  <Text style={styles.sectionLabel}>Nộp bài tập của bạn</Text>
+  {user?.role === 1 && (
+    <View style={{marginTop: 28, backgroundColor:'#fff', borderRadius:8, padding:14}}>
+      <Text style={{fontWeight:"bold", fontSize:17, marginBottom:7, color:"#243665"}}>Danh sách sinh viên đã nộp bài</Text>
+      {dsBaiNop.length === 0 ? (
+        <Text style={{color:'#888'}}>Chưa có sinh viên nào nộp bài.</Text>
       ) : (
-        // Nếu chưa nộp bài, cho phép nộp bài
-        <>
-          <TouchableOpacity onPress={chonTep} style={styles.chooseFileBtn}>
-            <Text style={styles.chooseFileText}>
-              {tep ? `📄 Đã chọn: ${tep.name}` : "📎 Chọn tệp bài tập"}
+        dsBaiNop.map(bn => (
+          <View key={bn.ID} style={{borderBottomWidth:0.5, borderColor:'#eee', marginBottom:8, paddingBottom:8}}>
+            <Text style={{color:'#243665', fontWeight:'bold'}}>
+              {bn.HoTen || `Mã SV: ${bn.MaSV}`} <Text style={{color:"#467af3"}}>({new Date(bn.NgayNop).toLocaleString("vi-VN")})</Text>
             </Text>
-          </TouchableOpacity>
-          {tep && tep.uri && (
-            <Image source={{ uri: tep.uri }} style={styles.imagePreview} />
-          )}
-          <TextInput
-            value={nhanXet}
-            onChangeText={setNhanXet}
-            placeholder="✏️ Nhập nhận xét"
-            multiline
-            style={styles.textInput}
-          />
-          <TouchableOpacity
-            style={[
-              styles.submitBtn,
-              { backgroundColor: loading ? "#B2DFDB" : "#4666ec" },
-            ]}
-            onPress={uploadFile}
-            disabled={loading}
-          >
-            <Ionicons
-              name="cloud-upload-outline"
-              size={20}
-              color="#fff"
-              style={styles.icon}
-            />
-            <Text style={styles.submitBtnText}>
-              {loading ? "Đang gửi..." : "📤 Gửi bài tập"}
-            </Text>
-          </TouchableOpacity>
-        </>
+            {bn.Diem !== null && (
+              <Text style={{color:'#10b981', fontWeight:'500'}}>Điểm: {bn.Diem}</Text>
+            )}
+            {bn.VanBan && (
+              <Text style={{color:'#374151', fontStyle:'italic', marginTop:2}}>Nhận xét: {bn.VanBan}</Text>
+            )}
+            {bn.FileDinhKem && (
+              <TouchableOpacity onPress={() => Linking.openURL(`${BASE_URL}${bn.FileDinhKem}`)}>
+                <Text style={{color:"#4666ec", marginTop:2}}>📎 Xem file đính kèm</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))
       )}
     </View>
+  )}
+  {/* Nếu đã hết hạn */}
+  {isExpired(bv.hanNop) ? (
+    <Text style={{ color: "#ef4444", fontWeight: "bold", marginTop: 10 }}>
+      ⛔ Đã hết hạn, không thể nộp bài!
+    </Text>
+  ) : baiNop.length > 0 ? (
+    // Nếu đã nộp bài, hiển thị tùy chọn sửa
+    <>
+      <Text>Bạn đã nộp bài rồi.</Text>
+      <TouchableOpacity
+        onPress={() => handleEdit(baiNop[0])}
+        style={styles.chooseFileBtn}
+      >
+        <Text style={styles.chooseFileText}>Sửa bài nộp</Text>
+      </TouchableOpacity>
+    </>
+  ) : (
+    // Nếu chưa nộp bài, cho phép nộp bài
+    <>
+      <TouchableOpacity onPress={chonTep} style={styles.chooseFileBtn}>
+        <Text style={styles.chooseFileText}>
+          {tep ? `📄 Đã chọn: ${tep.name}` : "📎 Chọn tệp bài tập"}
+        </Text>
+      </TouchableOpacity>
+      {tep && tep.uri && (
+        <Image source={{ uri: tep.uri }} style={styles.imagePreview} />
+      )}
+      <TextInput
+        value={nhanXet}
+        onChangeText={setNhanXet}
+        placeholder="✏️ Nhập nhận xét"
+        multiline
+        style={styles.textInput}
+      />
+      <TouchableOpacity
+        style={[
+          styles.submitBtn,
+          { backgroundColor: loading ? "#B2DFDB" : "#4666ec" },
+        ]}
+        onPress={uploadFile}
+        disabled={loading}
+      >
+        <Ionicons
+          name="cloud-upload-outline"
+          size={20}
+          color="#fff"
+          style={styles.icon}
+        />
+        <Text style={styles.submitBtnText}>
+          {loading ? "Đang gửi..." : "📤 Gửi bài tập"}
+        </Text>
+      </TouchableOpacity>
+    </>
+  )}
+</View>
+
 
     {/* Modal sửa bài nộp */}
     <Modal

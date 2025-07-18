@@ -21,7 +21,7 @@ router.post("/tao", auth, checkGiangVien, upload.single("file"), (req, res, next
   next();
 }, createBaiViet);
 
-
+// router.get('/bainop/danhsach/:maBaiViet', controller.getDanhSachBaiNopByBaiViet);
 router.get("/loai", controller.getBaiVietTheoLoai);
 
 router.get("/id/:id", controller.getBaiVietById);
@@ -37,6 +37,10 @@ router.get('/chitiet/:id', controller.getBaiVietById);
 router.delete("/bainop/:id", controller.deleteBaiNop);
 
 router.get("/:id/comments", controllerComment.getCommentsByPostId);
+
+// Ví dụ với Express
+router.get('/bainop/danhsach/:id', controller.getBaiNopByBaiViet);
+
 
 // Gửi comment mới (phải đăng nhập)
 router.post("/:id/comment", verifyToken, controllerComment.postComment);
