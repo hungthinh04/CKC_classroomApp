@@ -56,7 +56,7 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage: storage });
 
-router.post('/uploads', upload.single('file'), (req, res) => {
+app.post('/uploads', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   res.json({ url: req.file.path });
 });
