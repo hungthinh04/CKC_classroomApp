@@ -37,7 +37,7 @@ import {
 import { BaiVietEdit, BaiVietList } from "./resources/BaiViet";
 import { ThongKeList } from "./resources/ThongKe";
 // import ThongKe from "./resources/ThongKe";
-const dataProvider = simpleRestProvider("http://localhost:3000/admin");
+const dataProvider = simpleRestProvider("https://ckc-classroomappp.onrender.com/admin");
 
 function App() {
   return (
